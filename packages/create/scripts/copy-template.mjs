@@ -36,23 +36,24 @@ function copyDir(src, destDir) {
   }
 }
 
-/** Keep scaffold wrangler free of account-specific KV IDs. */
+/** Keep scaffold wrangler free of account-specific IDs and production domains. */
 function sanitizeWrangler(filePath) {
   if (!existsSync(filePath)) return;
   let text = readFileSync(filePath, "utf8");
-  text = text.replace(/"id":\s*"[0-9a-f]{32}"/gi, (_m, offset, full) => {
-    // Use different placeholders for DOCS vs SESSION by order of appearance
-    return '"id": "00000000000000000000000000000000"';
-  });
-  // Second pass: alternate placeholders for preview_id / second namespace
   let idCount = 0;
   text = text.replace(/"(id|preview_id)":\s*"[0-9a-f]{32}"/gi, (_, key) => {
     const pad = idCount < 2 ? "0" : "1";
     idCount += 1;
     return `"${key}": "${pad.repeat(32)}"`;
   });
-  // Prefer a generic worker name in the published template
   text = text.replace(/"name":\s*"prompton"/, '"name": "prompton-docs"');
+  // Drop production custom domains from the scaffold
+  text = text.replace(
+    /,\s*"routes":\s*\[[\s\S]*?\],/,
+    ",",
+  );
+  text = text.replace(/"workers_dev":\s*true,\s*/, "");
+  text = text.replace(/"preview_urls":\s*true,\s*/, "");
   writeFileSync(filePath, text);
 }
 

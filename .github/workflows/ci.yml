@@ -1,0 +1,91 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @prompton/core build
+      - run: pnpm --filter @prompton/ui build
+      - run: pnpm --filter @prompton/agent build
+      - run: pnpm --filter @prompton/indexer build
+      - run: pnpm --filter @prompton/starlight build
+      - run: pnpm --filter create-prompton build
+      - run: pnpm --filter @prompton/starter build
+
+  deploy:
+    name: Deploy starter
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deploy secrets
+        id: check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "CLOUDFLARE_API_TOKEN missing — skipping deploy (build still passed)."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.skip != 'true'
+        uses: actions/checkout@v4
+      - if: steps.check.outputs.skip != 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - if: steps.check.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.check.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.check.outputs.skip != 'true'
+        run: pnpm --filter @prompton/core --filter @prompton/ui --filter @prompton/agent --filter @prompton/indexer --filter @prompton/starlight build
+      - if: steps.check.outputs.skip != 'true'
+        run: pnpm exec astro build
+        working-directory: examples/starter
+      - if: steps.check.outputs.skip != 'true'
+        name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: examples/starter
+          command: deploy
+      - if: steps.check.outputs.skip != 'true'
+        name: Reindex docs
+        env:
+          PROMPTON_REINDEX_SECRET: ${{ secrets.PROMPTON_REINDEX_SECRET }}
+          PROMPTON_URL: ${{ vars.PROMPTON_URL }}
+        run: |
+          if [ -z "$PROMPTON_REINDEX_SECRET" ]; then
+            echo "PROMPTON_REINDEX_SECRET not set; skipping reindex"
+            exit 0
+          fi
+          URL="${PROMPTON_URL:-https://prompton.dev}"
+          curl -fsS -X POST \
+            -H "x-prompton-reindex-secret: $PROMPTON_REINDEX_SECRET" \
+            "$URL/api/prompton/reindex"
