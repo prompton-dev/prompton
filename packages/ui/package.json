@@ -1,6 +1,6 @@
 {
   "name": "@prompton-dev/ui",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Prompton chat UI components for Astro Starlight",
   "type": "module",
   "sideEffects": [

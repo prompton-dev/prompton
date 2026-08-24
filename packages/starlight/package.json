@@ -1,6 +1,6 @@
 {
   "name": "@prompton-dev/starlight",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Starlight plugin for Prompton conversational docs",
   "type": "module",
   "exports": {
@@ -37,7 +37,7 @@
     "@ai-sdk/react": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "@astrojs/starlight": "^0.35.0 || ^0.36.0 || ^0.37.0 || ^0.38.0 || ^0.39.0 || ^0.40.0 || ^0.41.0",
     "@cloudflare/ai-chat": "^0.10.0",
-    "@prompton-dev/ui": "^0.1.0",
+    "@prompton-dev/ui": "^0.1.2",
     "agents": "^0.21.0",
     "astro": "^5.0.0 || ^6.0.0 || ^7.0.0",
     "react": "^19.0.0",
