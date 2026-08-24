@@ -1,6 +1,6 @@
 {
   "name": "@prompton-dev/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared types and contracts for Prompton",
   "type": "module",
   "exports": {
@@ -9,7 +9,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",

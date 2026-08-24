@@ -1,6 +1,6 @@
 {
   "name": "@prompton-dev/starlight",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Starlight plugin for Prompton conversational docs",
   "type": "module",
   "exports": {
@@ -11,7 +11,10 @@
     "./components/*": "./src/components/*",
     "./styles.css": "./src/styles.css"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
