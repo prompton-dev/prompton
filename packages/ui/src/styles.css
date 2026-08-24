@@ -13,6 +13,41 @@
   font-family: var(--sl-font);
 }
 
+.prompton-chat__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.25rem 0.65rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  margin-bottom: 0.25rem;
+}
+
+.prompton-chat__toolbar-label {
+  font-size: var(--sl-text-sm);
+  font-weight: 600;
+  color: var(--sl-color-gray-2);
+  letter-spacing: 0.02em;
+}
+
+.prompton-chat__new {
+  appearance: none;
+  border: 1px solid var(--sl-color-hairline);
+  background: transparent;
+  color: var(--sl-color-text);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+
+.prompton-chat__new:hover {
+  background: var(--sl-color-bg-nav);
+  border-color: var(--sl-color-gray-5);
+}
+
 .prompton-chat__messages {
   flex: 1;
   overflow-y: auto;
@@ -64,6 +99,13 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
+}
+
+.prompton-chat__followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.15rem 0 0.5rem;
 }
 
 .prompton-chat__suggestion {
@@ -348,6 +390,33 @@
   font-size: var(--sl-text-xs);
   color: var(--sl-color-gray-3);
   margin-top: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.prompton-chat__status--warn {
+  color: var(--sl-color-orange-high, #fb923c);
+}
+
+.prompton-chat__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--sl-color-gray-4);
+}
+
+.prompton-chat__dot--ok {
+  background: var(--sl-color-green-high, #4ade80);
+}
+
+.prompton-chat__dot--pending {
+  background: var(--sl-color-orange-high, #fb923c);
+  animation: prompton-typing 1.1s ease-in-out infinite;
+}
+
+.prompton-chat__dot--bad {
+  background: var(--sl-color-red-high, #f87171);
 }
 
 .prompton-mode-toggle {

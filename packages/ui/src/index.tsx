@@ -32,8 +32,12 @@ export interface PromptonChatProps {
   onSend: (text: string) => void | Promise<void>;
   onStop?: () => void;
   onNavigate?: (slug: string) => void;
+  onNewChat?: () => void;
   suggestions?: string[];
+  /** Contextual prompts shown under the latest assistant reply */
+  followUps?: string[];
   pageContext?: PageContext;
+  connection?: "connecting" | "connected" | "disconnected";
 }
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -74,8 +78,11 @@ export function PromptonChat({
   onSend,
   onStop,
   onNavigate,
+  onNewChat,
   suggestions = [],
+  followUps = [],
   pageContext,
+  connection = "connected",
 }: PromptonChatProps) {
   const [input, setInput] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -99,6 +106,30 @@ export function PromptonChat({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, [input]);
+
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (typing) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        textareaRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (document.documentElement.getAttribute("data-prompton-mode") !== "chat") return;
+    const t = window.setTimeout(() => textareaRef.current?.focus(), 80);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const submit = useCallback(
     async (text: string) => {
@@ -135,14 +166,28 @@ export function PromptonChat({
   const empty = messages.length === 0;
   const statusLabel = error
     ? `Error: ${error}`
-    : status === "submitted"
-      ? "Searching docs…"
-      : status === "streaming"
-        ? "Writing…"
-        : "Ready";
+    : connection === "disconnected"
+      ? "Disconnected — reconnecting…"
+      : connection === "connecting"
+        ? "Connecting…"
+        : status === "submitted"
+          ? "Searching docs…"
+          : status === "streaming"
+            ? waitingForReply
+              ? "Thinking…"
+              : "Writing…"
+            : "Ready · press / to focus";
 
   return (
     <div className="prompton-chat" data-prompton-chat>
+      <div className="prompton-chat__toolbar">
+        <span className="prompton-chat__toolbar-label">Chat</span>
+        {onNewChat ? (
+          <button type="button" className="prompton-chat__new" onClick={onNewChat}>
+            New chat
+          </button>
+        ) : null}
+      </div>
       {empty ? (
         <div className="prompton-chat__empty">
           <h2>Chat with the docs</h2>
@@ -255,6 +300,20 @@ export function PromptonChat({
               </div>
             </article>
           ) : null}
+          {!busy && followUps.length > 0 ? (
+            <div className="prompton-chat__followups" aria-label="Follow-up questions">
+              {followUps.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="prompton-chat__suggestion"
+                  onClick={() => void submit(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div ref={bottomRef} />
         </div>
       )}
@@ -290,7 +349,27 @@ export function PromptonChat({
             </button>
           )}
         </form>
-        <div className="prompton-chat__status">{statusLabel}</div>
+        <div
+          className={[
+            "prompton-chat__status",
+            connection === "disconnected" ? "prompton-chat__status--warn" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <span
+            className={[
+              "prompton-chat__dot",
+              connection === "connected"
+                ? "prompton-chat__dot--ok"
+                : connection === "connecting"
+                  ? "prompton-chat__dot--pending"
+                  : "prompton-chat__dot--bad",
+            ].join(" ")}
+            aria-hidden
+          />
+          {statusLabel}
+        </div>
       </div>
     </div>
   );

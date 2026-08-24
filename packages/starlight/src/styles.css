@@ -47,6 +47,59 @@ html[data-prompton-mode="chat"] .main-pane {
   max-width: none;
 }
 
+/* Splash pages omit the docs sidebar — keep chat usable full-width */
+html[data-prompton-mode="chat"][data-has-hero] .main-frame,
+html[data-prompton-mode="chat"][data-has-hero] .main-pane,
+html[data-prompton-mode="chat"][data-has-hero] .content-panel {
+  width: 100%;
+  max-width: none;
+}
+
+html[data-prompton-mode="chat"][data-has-hero] .sl-container {
+  max-width: none;
+}
+
+.prompton-history {
+  margin: 0 0 1rem;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+.prompton-history__title {
+  margin: 0 0 0.4rem;
+  font-size: var(--sl-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+.prompton-history__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.prompton-history__item {
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: start;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  color: var(--sl-color-text);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.prompton-history__item:hover {
+  background: var(--sl-color-bg-nav);
+}
+
 [data-prompton-pane="chat"][hidden],
 [data-prompton-pane="browse"][hidden],
 [data-prompton-chat-only][hidden] {

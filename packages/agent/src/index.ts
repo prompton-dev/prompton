@@ -180,19 +180,21 @@ export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
     const hits = query ? await retrieve(this.env, query, this.state.pageContext) : [];
     const citations = citationsFromHits(hits);
 
-    // generateText avoids workers-ai-provider doubling native + OpenAI deltas.
-    // We then progressive-stream words into the UI message stream.
-    const { text } = await generateText({
-      model,
-      system: docsSystemPrompt(this.state.pageContext, hits),
-      messages: await convertToModelMessages(this.messages),
-    });
-
+    // Open the UI stream before generateText so the client leaves "submitted"
+    // sooner; then progressive-stream the completed answer (avoids Workers AI
+    // native+OpenAI double-emit while keeping a readable typewriter).
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         const id = crypto.randomUUID();
         writer.write({ type: "start", messageMetadata: { citations } });
         writer.write({ type: "text-start", id });
+
+        const { text } = await generateText({
+          model,
+          system: docsSystemPrompt(this.state.pageContext, hits),
+          messages: await convertToModelMessages(this.messages),
+        });
+
         for await (const delta of streamWords(text)) {
           writer.write({ type: "text-delta", id, delta });
         }

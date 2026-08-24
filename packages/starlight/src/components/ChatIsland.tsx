@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PromptonChat,
   sessionIdFromCookie,
   browseUrlForSlug,
+  resetChatSession,
   type ChatMessage,
   type ChatPart,
 } from "@prompton-dev/ui";
@@ -63,7 +64,6 @@ function uiMessagesToChatMessages(
         } else if (p.type === "reasoning" && typeof p.text === "string") {
           parts.push({ type: "reasoning", text: p.text });
         }
-        // Tool parts are omitted from the chat transcript for a quieter UX.
       }
     } else if (typeof m.content === "string") {
       parts.push({ type: "text", text: m.content });
@@ -77,13 +77,50 @@ function uiMessagesToChatMessages(
   });
 }
 
+function followUpsFor(messages: ChatMessage[], pageContext: PageContext): string[] {
+  const last = [...messages].reverse().find((m) => m.role === "assistant");
+  if (!last) return [];
+  const fromCitations = (last.citations ?? [])
+    .slice(0, 2)
+    .map((c) =>
+      c.heading ? `Tell me more about ${c.heading}` : `Summarize ${c.title}`,
+    );
+  const slug = (pageContext.slug ?? "").replace(/^\/+|\/+$/g, "");
+  const isHome = !slug || slug === "index";
+  const title = pageContext.title?.trim();
+  const contextual =
+    !isHome && title
+      ? [`How does ${title} fit with the rest of the docs?`, `Show me a code example for ${title}`]
+      : ["How do I deploy Prompton?", "How does indexing work?"];
+  const merged = [...fromCitations, ...contextual];
+  const seen = new Set<string>();
+  return merged.filter((s) => {
+    if (seen.has(s)) return false;
+    seen.add(s);
+    return true;
+  }).slice(0, 3);
+}
+
 export default function ChatIsland({ agentName, pageContext, suggestions }: ChatIslandProps) {
   const sessionId = useMemo(() => sessionIdFromCookie(), []);
+  const [connection, setConnection] = useState<"connecting" | "connected" | "disconnected">(
+    "connecting",
+  );
 
   const agent = useAgent({
     agent: agentName,
     name: sessionId,
+    onOpen: () => setConnection("connected"),
+    onClose: () => setConnection("disconnected"),
+    onError: () => setConnection("disconnected"),
   });
+
+  useEffect(() => {
+    const sock = agent as { readyState?: number };
+    if (typeof sock.readyState === "number") {
+      setConnection(sock.readyState === 1 ? "connected" : sock.readyState === 0 ? "connecting" : "disconnected");
+    }
+  }, [agent]);
 
   useEffect(() => {
     const a = agent as { call?: (method: string, args: unknown[]) => Promise<unknown> };
@@ -96,6 +133,13 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
 
   const onNavigate = useCallback((slug: string) => {
     window.location.href = browseUrlForSlug(slug);
+  }, []);
+
+  const onNewChat = useCallback(() => {
+    resetChatSession();
+    const u = new URL(window.location.href);
+    u.searchParams.set("mode", "chat");
+    window.location.href = u.pathname + "?" + u.searchParams.toString();
   }, []);
 
   const {
@@ -115,7 +159,6 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
           output: { ok: true, slug, navigating: true },
         });
         if (slug) {
-          // Brief delay so the tool result is acknowledged before unload
           setTimeout(() => onNavigate(slug), 50);
         }
       }
@@ -123,6 +166,10 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
   });
 
   const messages = useMemo(() => uiMessagesToChatMessages(rawMessages as never), [rawMessages]);
+  const followUps = useMemo(
+    () => (rawStatus === "ready" ? followUpsFor(messages, pageContext) : []),
+    [messages, pageContext, rawStatus],
+  );
 
   const status =
     rawStatus === "streaming"
@@ -157,8 +204,11 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
       onSend={onSend}
       onStop={stop}
       onNavigate={onNavigate}
+      onNewChat={onNewChat}
       suggestions={suggestions}
+      followUps={followUps}
       pageContext={pageContext}
+      connection={connection}
     />
   );
 }
