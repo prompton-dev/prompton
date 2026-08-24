@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { marked } from "marked";
 import type { Citation, PageContext, PromptonClientConfig } from "@prompton-dev/core";
 
@@ -33,6 +40,23 @@ function renderMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string;
 }
 
+function dedupeCitations(citations: Citation[] | undefined): Citation[] {
+  if (!citations?.length) return [];
+  const seen = new Set<string>();
+  const out: Citation[] = [];
+  for (const c of citations) {
+    const key = `${c.slug}::${c.heading ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
+function messageHasVisibleText(m: ChatMessage): boolean {
+  return m.parts.some((p) => p.type === "text" && Boolean(p.text?.trim()));
+}
+
 export function PromptonChat({
   messages,
   status,
@@ -45,11 +69,25 @@ export function PromptonChat({
 }: PromptonChatProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const busy = status === "submitted" || status === "streaming";
+  const waitingForReply =
+    busy &&
+    (messages.length === 0 ||
+      messages[messages.length - 1]?.role === "user" ||
+      (messages[messages.length - 1]?.role === "assistant" &&
+        !messageHasVisibleText(messages[messages.length - 1]!)));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [input]);
 
   const submit = useCallback(
     async (text: string) => {
@@ -74,6 +112,13 @@ export function PromptonChat({
   };
 
   const empty = messages.length === 0;
+  const statusLabel = error
+    ? `Error: ${error}`
+    : status === "submitted"
+      ? "Searching docs…"
+      : status === "streaming"
+        ? "Writing…"
+        : "Ready";
 
   return (
     <div className="prompton-chat" data-prompton-chat>
@@ -82,9 +127,14 @@ export function PromptonChat({
           <h2>Chat with the docs</h2>
           <p>
             {pageContext
-              ? `Ask anything about these docs. Context: ${pageContext.title}.`
+              ? "Ask a question — answers are grounded in these docs and cite the pages they came from."
               : "Browse pages or ask questions — answers cite your documentation."}
           </p>
+          {pageContext ? (
+            <div className="prompton-chat__context" title={pageContext.slug || "/"}>
+              Reading <strong>{pageContext.title}</strong>
+            </div>
+          ) : null}
           {suggestions.length > 0 && (
             <div className="prompton-chat__suggestions">
               {suggestions.map((s) => (
@@ -102,69 +152,84 @@ export function PromptonChat({
         </div>
       ) : (
         <div className="prompton-chat__messages" role="log" aria-live="polite">
-          {messages.map((m) => (
-            <article
-              key={m.id}
-              className={`prompton-msg prompton-msg--${m.role}`}
-              data-role={m.role}
-            >
-              <span className="prompton-msg__role">{m.role}</span>
-              {m.parts.map((part, i) => {
-                if (part.type === "tool") {
-                  return (
-                    <div key={i} className="prompton-msg__tool">
-                      tool: {part.toolName ?? "unknown"}
-                    </div>
-                  );
-                }
-                if (part.type === "reasoning" && part.text) {
-                  return (
-                    <div key={i} className="prompton-msg__tool">
-                      {part.text}
-                    </div>
-                  );
-                }
-                if (part.type === "text" && part.text) {
-                  return (
-                    <div
-                      key={i}
-                      className="prompton-msg__bubble sl-markdown-content"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(part.text) }}
-                    />
-                  );
-                }
-                return null;
-              })}
-              {m.citations && m.citations.length > 0 && (
-                <div className="prompton-citations">
-                  {m.citations.map((c) => (
-                    <button
-                      key={`${c.slug}-${c.heading ?? ""}`}
-                      type="button"
-                      className="prompton-citation"
-                      onClick={() => onNavigate?.(c.slug)}
-                      title={c.excerpt}
-                    >
-                      {c.title}
-                      {c.heading ? ` · ${c.heading}` : ""}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {messages.map((m) => {
+            const citations = dedupeCitations(m.citations);
+            const textParts = m.parts.filter((p) => p.type === "text" && p.text);
+            return (
+              <article
+                key={m.id}
+                className={`prompton-msg prompton-msg--${m.role}`}
+                data-role={m.role}
+              >
+                <span className="prompton-msg__role">{m.role === "user" ? "You" : "Prompton"}</span>
+                {textParts.map((part, i) => (
+                  <div
+                    key={i}
+                    className="prompton-msg__bubble sl-markdown-content"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(part.text!) }}
+                  />
+                ))}
+                {m.role === "assistant" && textParts.length === 0 && busy ? (
+                  <div className="prompton-msg__bubble prompton-msg__bubble--pending" aria-hidden>
+                    <span className="prompton-typing">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </div>
+                ) : null}
+                {citations.length > 0 && (
+                  <div className="prompton-citations" aria-label="Sources">
+                    {citations.map((c) => (
+                      <button
+                        key={`${c.slug}-${c.heading ?? ""}`}
+                        type="button"
+                        className="prompton-citation"
+                        onClick={() => onNavigate?.(c.slug)}
+                        title={c.excerpt}
+                      >
+                        {c.title}
+                        {c.heading ? ` · ${c.heading}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+          {waitingForReply && messages[messages.length - 1]?.role === "user" ? (
+            <article className="prompton-msg prompton-msg--assistant" data-role="assistant">
+              <span className="prompton-msg__role">Prompton</span>
+              <div className="prompton-msg__bubble prompton-msg__bubble--pending" aria-live="polite">
+                <span className="prompton-typing">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
             </article>
-          ))}
+          ) : null}
           <div ref={bottomRef} />
         </div>
       )}
 
       <div className="prompton-chat__composer">
+        {error ? (
+          <div className="prompton-chat__error" role="alert">
+            Something went wrong. Check your connection and try again.
+            <span className="prompton-chat__error-detail">{error}</span>
+          </div>
+        ) : null}
         <form className="prompton-chat__form" onSubmit={onSubmit}>
           <textarea
+            ref={textareaRef}
             className="prompton-chat__input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ask about the docs…"
+            placeholder={
+              pageContext ? `Ask about ${pageContext.title}…` : "Ask about the docs…"
+            }
             rows={1}
             aria-label="Chat message"
             disabled={busy && !onStop}
@@ -179,9 +244,7 @@ export function PromptonChat({
             </button>
           )}
         </form>
-        <div className="prompton-chat__status">
-          {error ? `Error: ${error}` : busy ? "Thinking…" : "Ready"}
-        </div>
+        <div className="prompton-chat__status">{statusLabel}</div>
       </div>
     </div>
   );
@@ -198,7 +261,7 @@ export function sessionIdFromCookie(cookieName = "prompton_sid"): string {
 
 export function browseUrlForSlug(slug: string): string {
   const path = slug.startsWith("/") ? slug : `/${slug}`;
-  const url = new URL(path, window.location.origin);
+  const url = new URL(path.endsWith("/") || path === "/" ? path : `${path}/`, window.location.origin);
   url.searchParams.delete("mode");
   return url.pathname + url.search;
 }

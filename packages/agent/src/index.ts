@@ -7,7 +7,7 @@ import {
   createUIMessageStreamResponse,
   generateText,
 } from "ai";
-import type { PageContext, SearchHit } from "@prompton-dev/core";
+import type { Citation, PageContext, SearchHit } from "@prompton-dev/core";
 import { CHAT_MODEL, EMBEDDING_MODEL } from "./models.js";
 import { lexicalSearch, loadChunksFromKv } from "./sync.js";
 
@@ -51,11 +51,55 @@ function docsSystemPrompt(pageContext: PageContext | undefined, hits: SearchHit[
   ].join("\n");
 }
 
-async function retrieve(env: DocsAgentEnv, query: string, topK = 6): Promise<SearchHit[]> {
-  const chunks = await loadChunksFromKv(env.DOCS);
-  const lexicalHits = lexicalSearch(chunks, query, topK);
-  if (lexicalHits.length > 0) return lexicalHits;
+function hitKey(h: Pick<SearchHit, "slug" | "heading">): string {
+  return `${h.slug}::${h.heading ?? ""}`;
+}
 
+/** Merge ranked hit lists; boost the reader's current page; dedupe by slug+heading. */
+export function rankHits(
+  lists: SearchHit[][],
+  pageContext: PageContext | undefined,
+  topK = 6,
+): SearchHit[] {
+  const byKey = new Map<string, SearchHit>();
+  for (const list of lists) {
+    for (const hit of list) {
+      const key = hitKey(hit);
+      const existing = byKey.get(key);
+      if (!existing || hit.score > existing.score) byKey.set(key, hit);
+    }
+  }
+
+  const preferred = pageContext?.slug;
+  const ranked = [...byKey.values()].sort((a, b) => {
+    const aBoost = preferred && a.slug === preferred ? 1000 : 0;
+    const bBoost = preferred && b.slug === preferred ? 1000 : 0;
+    return b.score + bBoost - (a.score + aBoost);
+  });
+
+  return ranked.slice(0, topK);
+}
+
+export function citationsFromHits(hits: SearchHit[], max = 4): Citation[] {
+  const seen = new Set<string>();
+  const out: Citation[] = [];
+  for (const h of hits) {
+    const key = hitKey(h);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      slug: h.slug,
+      title: h.title,
+      heading: h.heading || undefined,
+      url: h.url,
+      excerpt: h.excerpt,
+    });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+async function vectorSearch(env: DocsAgentEnv, query: string, topK: number): Promise<SearchHit[]> {
   try {
     const result = (await env.AI.run(
       EMBEDDING_MODEL,
@@ -72,13 +116,25 @@ async function retrieve(env: DocsAgentEnv, query: string, topK = 6): Promise<Sea
         title: meta.title ?? meta.slug ?? "Untitled",
         heading: meta.heading ?? "",
         excerpt: meta.excerpt ?? meta.content?.slice(0, 240) ?? "",
-        score: m.score ?? 0,
+        score: (m.score ?? 0) * 10,
         url: meta.url ?? (meta.slug ? `/${meta.slug}/` : "/"),
       };
     });
   } catch {
     return [];
   }
+}
+
+async function retrieve(
+  env: DocsAgentEnv,
+  query: string,
+  pageContext: PageContext | undefined,
+  topK = 6,
+): Promise<SearchHit[]> {
+  const chunks = await loadChunksFromKv(env.DOCS);
+  const lexicalHits = lexicalSearch(chunks, query, topK);
+  const vectorHits = await vectorSearch(env, query, topK);
+  return rankHits([vectorHits, lexicalHits], pageContext, topK);
 }
 
 function lastUserText(messages: AIChatAgent["messages"]): string {
@@ -98,6 +154,14 @@ function lastUserText(messages: AIChatAgent["messages"]): string {
   return "";
 }
 
+/** Progressive chunks — safe UX without Workers AI stream double-emit. */
+async function* streamWords(text: string, chunkSize = 28, pauseMs = 8): AsyncGenerator<string> {
+  for (let i = 0; i < text.length; i += chunkSize) {
+    yield text.slice(i, i + chunkSize);
+    if (pauseMs > 0) await new Promise((r) => setTimeout(r, pauseMs));
+  }
+}
+
 export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
   initialState: DocsAgentState = {};
 
@@ -105,17 +169,11 @@ export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
     const workersai = createWorkersAI({ binding: this.env.AI });
     const model = workersai(CHAT_MODEL);
     const query = lastUserText(this.messages);
-    const hits = query ? await retrieve(this.env, query) : [];
-    const citations = hits.map((h) => ({
-      slug: h.slug,
-      title: h.title,
-      heading: h.heading,
-      url: h.url,
-      excerpt: h.excerpt,
-    }));
+    const hits = query ? await retrieve(this.env, query, this.state.pageContext) : [];
+    const citations = citationsFromHits(hits);
 
-    // Non-streaming generate avoids a workers-ai-provider bug where native
-    // `response` + OpenAI `choices[].delta` chunks both emit, doubling tokens.
+    // generateText avoids workers-ai-provider doubling native + OpenAI deltas.
+    // We then progressive-stream words into the UI message stream.
     const { text } = await generateText({
       model,
       system: docsSystemPrompt(this.state.pageContext, hits),
@@ -123,11 +181,13 @@ export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
     });
 
     const stream = createUIMessageStream({
-      execute({ writer }) {
+      execute: async ({ writer }) => {
         const id = crypto.randomUUID();
         writer.write({ type: "start", messageMetadata: { citations } });
         writer.write({ type: "text-start", id });
-        writer.write({ type: "text-delta", id, delta: text });
+        for await (const delta of streamWords(text)) {
+          writer.write({ type: "text-delta", id, delta });
+        }
         writer.write({ type: "text-end", id });
         writer.write({ type: "finish", messageMetadata: { citations } });
       },

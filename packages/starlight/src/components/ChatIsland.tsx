@@ -60,14 +60,10 @@ function uiMessagesToChatMessages(
       for (const p of m.parts) {
         if (p.type === "text" && typeof p.text === "string") {
           parts.push({ type: "text", text: p.text });
-        } else if (p.type.startsWith("tool-") || p.type === "tool-invocation") {
-          parts.push({
-            type: "tool",
-            toolName: (p.toolName as string) ?? p.type.replace(/^tool-/, ""),
-          });
         } else if (p.type === "reasoning" && typeof p.text === "string") {
           parts.push({ type: "reasoning", text: p.text });
         }
+        // Tool parts are omitted from the chat transcript for a quieter UX.
       }
     } else if (typeof m.content === "string") {
       parts.push({ type: "text", text: m.content });

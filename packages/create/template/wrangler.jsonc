@@ -5,7 +5,9 @@
   "main": "./src/worker.ts",
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Needed so Worker can redirect www→apex and handle SSR before static HTML.
+    "run_worker_first": true
   },
   "observability": {
     "enabled": true
