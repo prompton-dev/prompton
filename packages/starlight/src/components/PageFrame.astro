@@ -1,0 +1,72 @@
+---
+import Default from "@astrojs/starlight/components/PageFrame.astro";
+import ChatIsland from "./ChatIsland";
+
+const entry = Astro.locals.starlightRoute?.entry;
+const title = entry?.data?.title ?? "Documentation";
+const slug = (entry?.id ?? "").replace(/\.(md|mdx)$/, "");
+
+const agentName =
+  (import.meta as ImportMeta & { env: Record<string, string> }).env.PUBLIC_PROMPTON_AGENT ??
+  "DocsAgent";
+
+const suggestions = [
+  "How do I get started?",
+  "How does Browse / Chat work?",
+  "Which Cloudflare products does Prompton use?",
+];
+---
+
+{/* Keep Starlight header/sidebar; swap only the main slot contents */}
+<div class="prompton-page" data-prompton-mode="browse">
+  <Default>
+    <slot name="header" slot="header" />
+    <slot name="sidebar" slot="sidebar" />
+    <div data-prompton-pane="browse">
+      <slot />
+    </div>
+    <div class="prompton-chat-shell" data-prompton-pane="chat" hidden>
+      <ChatIsland
+        client:only="react"
+        agentName={agentName}
+        pageContext={{ slug, title }}
+        suggestions={suggestions}
+      />
+    </div>
+  </Default>
+</div>
+
+<script>
+  function applyPromptonMode() {
+    const mode = new URLSearchParams(window.location.search).get("mode") === "chat" ? "chat" : "browse";
+    document.documentElement.setAttribute("data-prompton-mode", mode);
+    document.querySelectorAll(".prompton-page").forEach((root) => {
+      root.setAttribute("data-prompton-mode", mode);
+      const browse = root.querySelector('[data-prompton-pane="browse"]');
+      const chat = root.querySelector('[data-prompton-pane="chat"]');
+      if (!browse || !chat) return;
+      if (mode === "chat") {
+        browse.setAttribute("hidden", "");
+        chat.removeAttribute("hidden");
+      } else {
+        chat.setAttribute("hidden", "");
+        browse.removeAttribute("hidden");
+      }
+    });
+    document.querySelectorAll(".prompton-mode-toggle a").forEach((a) => {
+      const isChat = a.getAttribute("href")?.includes("mode=chat");
+      if ((mode === "chat" && isChat) || (mode === "browse" && !isChat)) {
+        a.setAttribute("aria-current", "true");
+      } else {
+        a.removeAttribute("aria-current");
+      }
+    });
+    document.querySelectorAll("[data-prompton-chat-only]").forEach((el) => {
+      if (mode === "chat") el.removeAttribute("hidden");
+      else el.setAttribute("hidden", "");
+    });
+  }
+  applyPromptonMode();
+  document.addEventListener("astro:page-load", applyPromptonMode);
+  window.addEventListener("popstate", applyPromptonMode);
+</script>

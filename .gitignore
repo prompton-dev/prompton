@@ -1,0 +1,16 @@
+.dev.vars
+.env
+.env.*
+!.env.example
+node_modules
+dist
+.astro
+.wrangler
+*.local
+.DS_Store
+coverage
+*.tsbuildinfo
+.turbo
+worker-configuration.d.ts
+.prompton
+public/.prompton

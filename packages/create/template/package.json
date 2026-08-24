@@ -1,0 +1,42 @@
+{
+  "name": "@prompton/starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro build && astro preview",
+    "index": "prompton-index --content src/content/docs --out .prompton/index",
+    "reindex": "curl -X POST -H \"x-prompton-reindex-secret: ${PROMPTON_REINDEX_SECRET:-dev-reindex-secret}\" http://127.0.0.1:4321/api/prompton/reindex",
+    "deploy": "astro build && wrangler deploy",
+    "types": "wrangler types",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@ai-sdk/react": "^3.0.0",
+    "@astrojs/cloudflare": "^14.2.3",
+    "@astrojs/react": "^6.0.4",
+    "@astrojs/starlight": "^0.41.7",
+    "@cloudflare/ai-chat": "^0.10.2",
+    "@prompton/agent": "workspace:*",
+    "@prompton/indexer": "workspace:*",
+    "@prompton/starlight": "workspace:*",
+    "@prompton/ui": "workspace:*",
+    "agents": "^0.21.0",
+    "ai": "^7.0.77",
+    "astro": "^7.2.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.34.3",
+    "workers-ai-provider": "^4.0.0",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260823.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.28.0"
+  }
+}

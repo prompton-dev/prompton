@@ -1,0 +1,38 @@
+---
+title: Prompton
+description: Conversational documentation sites on Cloudflare.
+template: splash
+hero:
+  tagline: Starlight docs with a first-class Chat mode — powered by Workers AI, Vectorize, and Durable Objects.
+  actions:
+    - text: Get started
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: Chat with the docs
+      link: /?mode=chat
+      icon: comment
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## What is Prompton?
+
+Prompton turns a [Starlight](https://starlight.astro.build/) documentation site into a **Browse / Chat** experience. Readers can navigate Markdown as usual, or switch to Chat and ask questions grounded in your docs — all on your Cloudflare account.
+
+## Why Cloudflare?
+
+<CardGrid>
+  <Card title="Workers + Astro" icon="rocket">
+    Deploy with `@astrojs/cloudflare` on Workers Static Assets. Docs stay fast and globally cached.
+  </Card>
+  <Card title="Agents SDK" icon="seti:react">
+    `DocsAgent` extends `AIChatAgent` for streaming chat, SQLite history, and resumable streams.
+  </Card>
+  <Card title="Vectorize RAG" icon="magnifier">
+    Index Markdown into Vectorize + KV so answers cite the right pages.
+  </Card>
+  <Card title="Workers AI" icon="approve-check">
+    Run embeddings and chat models at the edge, optionally via AI Gateway.
+  </Card>
+</CardGrid>

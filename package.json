@@ -1,0 +1,19 @@
+{
+  "name": "prompton",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @prompton/starter dev",
+    "build": "pnpm -r --filter '!create-prompton' build",
+    "build:packages": "pnpm -r --filter './packages/*' build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

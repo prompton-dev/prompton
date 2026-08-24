@@ -1,0 +1,30 @@
+---
+import Default from "@astrojs/starlight/components/Sidebar.astro";
+---
+
+<div class="prompton-history" data-prompton-chat-only hidden>
+  <p class="prompton-history__title">Conversation</p>
+  <a class="prompton-history__item" data-prompton-current-chat href="#">Current session</a>
+  <p class="prompton-history__title" style="margin-top:0.75rem">Docs</p>
+</div>
+<Default>
+  <slot />
+</Default>
+
+<script>
+  function syncSidebarChatBits() {
+    const mode = new URLSearchParams(window.location.search).get("mode") === "chat" ? "chat" : "browse";
+    document.querySelectorAll("[data-prompton-chat-only]").forEach((el) => {
+      if (mode === "chat") el.removeAttribute("hidden");
+      else el.setAttribute("hidden", "");
+    });
+    const link = document.querySelector("[data-prompton-current-chat]");
+    if (link) {
+      const u = new URL(window.location.href);
+      u.searchParams.set("mode", "chat");
+      link.setAttribute("href", u.pathname + "?" + u.searchParams.toString());
+    }
+  }
+  syncSidebarChatBits();
+  document.addEventListener("astro:page-load", syncSidebarChatBits);
+</script>

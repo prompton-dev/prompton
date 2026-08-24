@@ -1,0 +1,54 @@
+/* Prompton Starlight chrome tweaks */
+.prompton-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-end: 0.35rem;
+}
+
+.prompton-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.prompton-mode-toggle a {
+  text-decoration: none;
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-sm);
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  line-height: 1.4;
+}
+
+.prompton-mode-toggle a[aria-current="true"] {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-white);
+}
+
+.prompton-chat-shell {
+  min-height: calc(100vh - var(--sl-nav-height) - 2rem);
+  padding: 0.5rem 1rem 1.5rem;
+  width: 100%;
+}
+
+html[data-prompton-mode="chat"] .right-sidebar,
+html[data-prompton-mode="chat"] .right-sidebar-container,
+html[data-prompton-mode="chat"] starlight-toc,
+html[data-prompton-mode="chat"] mobile-starlight-toc {
+  display: none !important;
+}
+
+html[data-prompton-mode="chat"] .main-pane {
+  width: 100%;
+  max-width: none;
+}
+
+[data-prompton-pane="chat"][hidden],
+[data-prompton-pane="browse"][hidden],
+[data-prompton-chat-only][hidden] {
+  display: none !important;
+}

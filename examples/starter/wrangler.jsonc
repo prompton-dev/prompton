@@ -1,0 +1,51 @@
+{
+  "name": "prompton",
+  "compatibility_date": "2026-08-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/worker.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DOCS",
+      "id": "dd66354717b84c118a5323c24debdded",
+      "preview_id": "05511fcb370144899623744b4cf5bec1"
+    },
+    {
+      "binding": "SESSION",
+      "id": "a8d2292c25aa400a9de00eafe24168f1",
+      "preview_id": "f568188166f2481b85b470a98270d49b"
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "prompton-docs",
+      // Vectorize is remote-only. Needed for semantic search in local preview.
+      "remote": true
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DocsAgent",
+        "class_name": "DocsAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DocsAgent"]
+    }
+  ]
+}
