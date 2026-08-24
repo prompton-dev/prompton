@@ -131,19 +131,23 @@ export default {
       return handleReindex(request, env);
     }
 
-    // Seed KV (+ Vectorize when available) once so chat has retrieval data
+    // Seed KV (+ Vectorize when available) once so chat has retrieval data.
+    // Never block agent WebSocket upgrades on seeding or rate-limit KV latency.
     if (url.pathname.startsWith("/agents/")) {
-      const limited = await consumeRateLimit(env.SESSION, `agent:${clientIp(request)}`, {
-        limit: 60,
-        windowSec: 60,
-      });
-      if (!limited.ok) {
-        return new Response("Too many agent connections. Try again shortly.", {
-          status: 429,
-          headers: { "Retry-After": String(limited.retryAfter) },
+      const isUpgrade = request.headers.get("Upgrade")?.toLowerCase() === "websocket";
+      if (!isUpgrade) {
+        const limited = await consumeRateLimit(env.SESSION, `agent:${clientIp(request)}`, {
+          limit: 120,
+          windowSec: 60,
         });
+        if (!limited.ok) {
+          return new Response("Too many agent connections. Try again shortly.", {
+            status: 429,
+            headers: { "Retry-After": String(limited.retryAfter) },
+          });
+        }
       }
-      await seedOnce(env);
+      ctx.waitUntil(seedOnce(env));
     } else {
       ctx.waitUntil(seedOnce(env));
     }

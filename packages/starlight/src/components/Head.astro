@@ -1,0 +1,16 @@
+---
+import Default from "@astrojs/starlight/components/Head.astro";
+---
+
+{/* Runs before first paint so prerendered pages honor ?mode=chat */}
+<script is:inline>
+  (() => {
+    try {
+      const mode = new URLSearchParams(location.search).get("mode") === "chat" ? "chat" : "browse";
+      document.documentElement.setAttribute("data-prompton-mode", mode);
+    } catch {
+      document.documentElement.setAttribute("data-prompton-mode", "browse");
+    }
+  })();
+</script>
+<Default><slot /></Default>

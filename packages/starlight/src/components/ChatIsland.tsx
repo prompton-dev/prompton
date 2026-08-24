@@ -109,6 +109,12 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
     "connecting",
   );
 
+  useEffect(() => {
+    document.querySelectorAll("[data-prompton-ssr-fallback]").forEach((el) => {
+      el.setAttribute("hidden", "");
+    });
+  }, []);
+
   const agent = useAgent({
     agent: agentName,
     name: sessionId,

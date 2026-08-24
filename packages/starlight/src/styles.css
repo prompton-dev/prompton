@@ -33,6 +33,37 @@
   min-height: calc(100vh - var(--sl-nav-height) - 2rem);
   padding: 0.5rem 1rem 1.5rem;
   width: 100%;
+  position: relative;
+}
+
+/* Hide SSR fallback once the React island mounts */
+.prompton-chat-shell:has([data-prompton-chat]) .prompton-chat-ssr {
+  display: none;
+}
+
+.prompton-chat-ssr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: calc(100vh - var(--sl-nav-height, 3.5rem) - 4rem);
+  text-align: center;
+  color: var(--sl-color-gray-2);
+  padding: 2rem 1rem;
+}
+
+.prompton-chat-ssr__title {
+  margin: 0;
+  font-size: var(--sl-text-2xl);
+  color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+.prompton-chat-ssr__hint {
+  margin: 0;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
 }
 
 html[data-prompton-mode="chat"] .right-sidebar,
@@ -151,4 +182,20 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
 [data-prompton-pane="browse"][hidden],
 [data-prompton-chat-only][hidden] {
   display: none !important;
+}
+
+/* Mode visibility — works on prerendered HTML via Head inline script */
+html[data-prompton-mode="chat"] [data-prompton-pane="browse"],
+.prompton-page[data-prompton-mode="chat"] [data-prompton-pane="browse"] {
+  display: none !important;
+}
+
+html[data-prompton-mode="browse"] [data-prompton-pane="chat"],
+html:not([data-prompton-mode]) [data-prompton-pane="chat"],
+.prompton-page[data-prompton-mode="browse"] [data-prompton-pane="chat"] {
+  display: none !important;
+}
+
+html[data-prompton-mode="chat"] [data-prompton-pane="chat"] {
+  display: block !important;
 }

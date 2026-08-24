@@ -22,15 +22,23 @@ const suggestions = prompton?.suggestions ?? [
 ];
 ---
 
-{/* Keep Starlight header/sidebar; swap only the main slot contents */}
-<div class="prompton-page" data-prompton-mode="browse">
+{/*
+  Both panes stay in the DOM. Visibility is driven by html[data-prompton-mode],
+  set in Head before paint — required because Starlight prerenders pages and
+  ignores ?mode=chat at build time.
+*/}
+<div class="prompton-page">
   <Default>
     <slot name="header" slot="header" />
     <slot name="sidebar" slot="sidebar" />
     <div data-prompton-pane="browse">
       <slot />
     </div>
-    <div class="prompton-chat-shell" data-prompton-pane="chat" hidden>
+    <div class="prompton-chat-shell" data-prompton-pane="chat">
+      <div class="prompton-chat-ssr" data-prompton-ssr-fallback>
+        <p class="prompton-chat-ssr__title">Chat with the docs</p>
+        <p class="prompton-chat-ssr__hint">Loading chat…</p>
+      </div>
       <ChatIsland
         client:only="react"
         agentName={agentName}
@@ -47,16 +55,6 @@ const suggestions = prompton?.suggestions ?? [
     document.documentElement.setAttribute("data-prompton-mode", mode);
     document.querySelectorAll(".prompton-page").forEach((root) => {
       root.setAttribute("data-prompton-mode", mode);
-      const browse = root.querySelector('[data-prompton-pane="browse"]');
-      const chat = root.querySelector('[data-prompton-pane="chat"]');
-      if (!browse || !chat) return;
-      if (mode === "chat") {
-        browse.setAttribute("hidden", "");
-        chat.removeAttribute("hidden");
-      } else {
-        chat.setAttribute("hidden", "");
-        browse.removeAttribute("hidden");
-      }
     });
     document.querySelectorAll(".prompton-mode-toggle a").forEach((a) => {
       const isChat = a.getAttribute("href")?.includes("mode=chat");
