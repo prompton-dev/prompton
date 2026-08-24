@@ -154,12 +154,20 @@ function lastUserText(messages: AIChatAgent["messages"]): string {
   return "";
 }
 
-/** Progressive chunks — safe UX without Workers AI stream double-emit. */
-async function* streamWords(text: string, chunkSize = 28, pauseMs = 8): AsyncGenerator<string> {
-  for (let i = 0; i < text.length; i += chunkSize) {
-    yield text.slice(i, i + chunkSize);
-    if (pauseMs > 0) await new Promise((r) => setTimeout(r, pauseMs));
+/** Progressive chunks on word boundaries for a readable stream feel. */
+async function* streamWords(text: string, pauseMs = 18): AsyncGenerator<string> {
+  // Prefer emitting ~1–3 words at a time so the typewriter is visible.
+  const tokens = text.match(/\S+\s*|\s+/g) ?? [text];
+  let buf = "";
+  for (const token of tokens) {
+    buf += token;
+    if (buf.length >= 12 || /\n$/.test(buf)) {
+      yield buf;
+      buf = "";
+      if (pauseMs > 0) await new Promise((r) => setTimeout(r, pauseMs));
+    }
   }
+  if (buf) yield buf;
 }
 
 export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {

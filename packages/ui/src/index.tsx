@@ -36,6 +36,8 @@ export interface PromptonChatProps {
   pageContext?: PageContext;
 }
 
+marked.setOptions({ gfm: true, breaks: false });
+
 function renderMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string;
 }
@@ -57,6 +59,14 @@ function messageHasVisibleText(m: ChatMessage): boolean {
   return m.parts.some((p) => p.type === "text" && Boolean(p.text?.trim()));
 }
 
+function plainTextFromMessage(m: ChatMessage): string {
+  return m.parts
+    .filter((p) => p.type === "text" && p.text)
+    .map((p) => p.text!)
+    .join("\n")
+    .trim();
+}
+
 export function PromptonChat({
   messages,
   status,
@@ -68,6 +78,7 @@ export function PromptonChat({
   pageContext,
 }: PromptonChatProps) {
   const [input, setInput] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const busy = status === "submitted" || status === "streaming";
@@ -111,6 +122,16 @@ export function PromptonChat({
     }
   };
 
+  const copyMessage = useCallback(async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1600);
+    } catch {
+      /* clipboard may be denied */
+    }
+  }, []);
+
   const empty = messages.length === 0;
   const statusLabel = error
     ? `Error: ${error}`
@@ -152,20 +173,44 @@ export function PromptonChat({
         </div>
       ) : (
         <div className="prompton-chat__messages" role="log" aria-live="polite">
-          {messages.map((m) => {
+          {messages.map((m, idx) => {
             const citations = dedupeCitations(m.citations);
             const textParts = m.parts.filter((p) => p.type === "text" && p.text);
+            const isLast = idx === messages.length - 1;
+            const streamingThis =
+              isLast && m.role === "assistant" && status === "streaming" && textParts.length > 0;
+            const showCitations = citations.length > 0 && !(isLast && busy);
+            const plain = plainTextFromMessage(m);
             return (
               <article
                 key={m.id}
                 className={`prompton-msg prompton-msg--${m.role}`}
                 data-role={m.role}
               >
-                <span className="prompton-msg__role">{m.role === "user" ? "You" : "Prompton"}</span>
+                <div className="prompton-msg__meta">
+                  <span className="prompton-msg__role">
+                    {m.role === "user" ? "You" : "Prompton"}
+                  </span>
+                  {m.role === "assistant" && plain && !busy ? (
+                    <button
+                      type="button"
+                      className="prompton-msg__copy"
+                      onClick={() => void copyMessage(m.id, plain)}
+                    >
+                      {copiedId === m.id ? "Copied" : "Copy"}
+                    </button>
+                  ) : null}
+                </div>
                 {textParts.map((part, i) => (
                   <div
                     key={i}
-                    className="prompton-msg__bubble sl-markdown-content"
+                    className={[
+                      "prompton-msg__bubble",
+                      "sl-markdown-content",
+                      streamingThis ? "prompton-msg__bubble--streaming" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     dangerouslySetInnerHTML={{ __html: renderMarkdown(part.text!) }}
                   />
                 ))}
@@ -178,8 +223,9 @@ export function PromptonChat({
                     </span>
                   </div>
                 ) : null}
-                {citations.length > 0 && (
+                {showCitations ? (
                   <div className="prompton-citations" aria-label="Sources">
+                    <span className="prompton-citations__label">Sources</span>
                     {citations.map((c) => (
                       <button
                         key={`${c.slug}-${c.heading ?? ""}`}
@@ -193,7 +239,7 @@ export function PromptonChat({
                       </button>
                     ))}
                   </div>
-                )}
+                ) : null}
               </article>
             );
           })}
@@ -264,6 +310,13 @@ export function browseUrlForSlug(slug: string): string {
   const url = new URL(path.endsWith("/") || path === "/" ? path : `${path}/`, window.location.origin);
   url.searchParams.delete("mode");
   return url.pathname + url.search;
+}
+
+/** Start a fresh chat session (new Durable Object name via cookie). */
+export function resetChatSession(cookieName = "prompton_sid"): string {
+  const id = crypto.randomUUID();
+  document.cookie = `${cookieName}=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+  return id;
 }
 
 export type { PromptonClientConfig, PageContext, Citation };

@@ -9,7 +9,7 @@
 .prompton-mode-toggle {
   display: inline-flex;
   border: 1px solid var(--sl-color-hairline);
-  border-radius: 999px;
+  border-radius: 0.55rem;
   overflow: hidden;
   flex-shrink: 0;
 }

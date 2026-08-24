@@ -4,7 +4,12 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
 
 <div class="prompton-history" data-prompton-chat-only hidden>
   <p class="prompton-history__title">Conversation</p>
-  <a class="prompton-history__item" data-prompton-current-chat href="#">Current session</a>
+  <div class="prompton-history__actions">
+    <a class="prompton-history__item" data-prompton-current-chat href="#">Current session</a>
+    <button type="button" class="prompton-history__item" data-prompton-new-chat>
+      New chat
+    </button>
+  </div>
   <p class="prompton-history__title" style="margin-top:0.75rem">Docs</p>
 </div>
 <Default>
@@ -25,6 +30,23 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
       link.setAttribute("href", u.pathname + "?" + u.searchParams.toString());
     }
   }
+
+  function newChat() {
+    const id = crypto.randomUUID();
+    document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+    const u = new URL(window.location.href);
+    u.searchParams.set("mode", "chat");
+    window.location.href = u.pathname + "?" + u.searchParams.toString();
+  }
+
   syncSidebarChatBits();
   document.addEventListener("astro:page-load", syncSidebarChatBits);
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-prompton-new-chat]")) {
+      event.preventDefault();
+      newChat();
+    }
+  });
 </script>
