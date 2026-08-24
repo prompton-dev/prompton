@@ -27,6 +27,8 @@ curl -X POST -H "x-prompton-reindex-secret: $PROMPTON_REINDEX_SECRET" \
   https://your-worker.example/api/prompton/reindex
 ```
 
+Reindex is secret-gated and rate-limited (a few calls per hour per client IP). Chat messages are rate-limited per session as well.
+
 The endpoint:
 
 1. Reads `/.prompton/index/*` from Workers Static Assets

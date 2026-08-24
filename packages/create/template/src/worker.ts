@@ -1,6 +1,12 @@
 import { handle } from "@astrojs/cloudflare/handler";
 import { routeAgentRequest } from "agents";
-import { DocsAgent, syncDocsIndex, type SyncPayload } from "@prompton-dev/agent";
+import {
+  DocsAgent,
+  syncDocsIndex,
+  consumeRateLimit,
+  clientIp,
+  type SyncPayload,
+} from "@prompton-dev/agent";
 import type { DocChunk, IndexManifest, NavItem } from "@prompton-dev/core";
 
 export { DocsAgent };
@@ -83,6 +89,17 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
   const denied = authorizeReindex(request, env);
   if (denied) return denied;
 
+  const limited = await consumeRateLimit(env.SESSION, `reindex:${clientIp(request)}`, {
+    limit: 6,
+    windowSec: 3600,
+  });
+  if (!limited.ok) {
+    return Response.json(
+      { error: "Too many reindex requests. Try again later.", retryAfter: limited.retryAfter },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+    );
+  }
+
   let payload: SyncPayload | null = null;
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
@@ -122,6 +139,16 @@ export default {
 
     // Seed KV (+ Vectorize when available) once so chat has retrieval data
     if (url.pathname.startsWith("/agents/")) {
+      const limited = await consumeRateLimit(env.SESSION, `agent:${clientIp(request)}`, {
+        limit: 60,
+        windowSec: 60,
+      });
+      if (!limited.ok) {
+        return new Response("Too many agent connections. Try again shortly.", {
+          status: 429,
+          headers: { "Retry-After": String(limited.retryAfter) },
+        });
+      }
       await seedOnce(env);
     } else {
       ctx.waitUntil(seedOnce(env));

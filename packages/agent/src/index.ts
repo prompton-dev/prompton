@@ -10,11 +10,14 @@ import {
 import type { Citation, PageContext, SearchHit } from "@prompton-dev/core";
 import { CHAT_MODEL, EMBEDDING_MODEL } from "./models.js";
 import { lexicalSearch, loadChunksFromKv } from "./sync.js";
+import { consumeRateLimit } from "./rate-limit.js";
 
 export interface DocsAgentEnv {
   AI: Ai;
   VECTORIZE: VectorizeIndex;
   DOCS: KVNamespace;
+  /** Used for Astro sessions and Prompton rate-limit counters */
+  SESSION?: KVNamespace;
   DocsAgent: DurableObjectNamespace;
   ASSETS?: Fetcher;
 }
@@ -174,6 +177,28 @@ export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
   initialState: DocsAgentState = {};
 
   async onChatMessage() {
+    const kv = this.env.SESSION ?? this.env.DOCS;
+    if (kv) {
+      const limited = await consumeRateLimit(kv, `chat:${this.name}`, {
+        limit: 20,
+        windowSec: 60,
+      });
+      if (!limited.ok) {
+        const stream = createUIMessageStream({
+          execute: async ({ writer }) => {
+            const id = crypto.randomUUID();
+            const msg = `You're sending messages too quickly. Wait about ${limited.retryAfter}s and try again.`;
+            writer.write({ type: "start" });
+            writer.write({ type: "text-start", id });
+            writer.write({ type: "text-delta", id, delta: msg });
+            writer.write({ type: "text-end", id });
+            writer.write({ type: "finish" });
+          },
+        });
+        return createUIMessageStreamResponse({ stream });
+      }
+    }
+
     const workersai = createWorkersAI({ binding: this.env.AI });
     const model = workersai(CHAT_MODEL);
     const query = lastUserText(this.messages);
@@ -216,3 +241,5 @@ export class DocsAgent extends AIChatAgent<DocsAgentEnv, DocsAgentState> {
 export { docsSystemPrompt, CHAT_MODEL, EMBEDDING_MODEL, retrieve };
 export { syncDocsIndex, lexicalSearch, loadChunksFromKv } from "./sync.js";
 export type { SyncPayload, SyncResult, SyncEnv } from "./sync.js";
+export { consumeRateLimit, clientIp } from "./rate-limit.js";
+export type { RateLimitOptions, RateLimitResult } from "./rate-limit.js";

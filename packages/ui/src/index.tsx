@@ -8,6 +8,10 @@ import {
 } from "react";
 import { marked } from "marked";
 import type { Citation, PageContext, PromptonClientConfig } from "@prompton-dev/core";
+import {
+  ensureChatSession,
+  startNewChatSession,
+} from "./sessions.js";
 
 export type ChatRole = "user" | "assistant" | "system";
 
@@ -378,9 +382,20 @@ export function PromptonChat({
 export function sessionIdFromCookie(cookieName = "prompton_sid"): string {
   if (typeof document === "undefined") return crypto.randomUUID();
   const match = document.cookie.match(new RegExp(`(?:^|; )${cookieName}=([^;]*)`));
-  if (match?.[1]) return decodeURIComponent(match[1]);
+  if (match?.[1]) {
+    const id = decodeURIComponent(match[1]);
+    // Keep the active id in the local history list.
+    try {
+      // Dynamic import avoided — sessions is same package; call after export.
+      ensureChatSession(id);
+    } catch {
+      /* ignore */
+    }
+    return id;
+  }
   const id = crypto.randomUUID();
   document.cookie = `${cookieName}=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+  ensureChatSession(id);
   return id;
 }
 
@@ -393,9 +408,19 @@ export function browseUrlForSlug(slug: string): string {
 
 /** Start a fresh chat session (new Durable Object name via cookie). */
 export function resetChatSession(cookieName = "prompton_sid"): string {
-  const id = crypto.randomUUID();
-  document.cookie = `${cookieName}=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
-  return id;
+  return startNewChatSession(cookieName);
 }
 
 export type { PromptonClientConfig, PageContext, Citation };
+
+export {
+  listChatSessions,
+  ensureChatSession,
+  touchChatSession,
+  titleFromUserText,
+  switchChatSession,
+  startNewChatSession,
+  readSessionIdFromCookie,
+  SESSIONS_EVENT,
+  type ChatSessionMeta,
+} from "./sessions.js";

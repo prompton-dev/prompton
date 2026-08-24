@@ -4,6 +4,8 @@ import {
   sessionIdFromCookie,
   browseUrlForSlug,
   resetChatSession,
+  touchChatSession,
+  titleFromUserText,
   type ChatMessage,
   type ChatPart,
 } from "@prompton-dev/ui";
@@ -137,9 +139,6 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
 
   const onNewChat = useCallback(() => {
     resetChatSession();
-    const u = new URL(window.location.href);
-    u.searchParams.set("mode", "chat");
-    window.location.href = u.pathname + "?" + u.searchParams.toString();
   }, []);
 
   const {
@@ -170,6 +169,18 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
     () => (rawStatus === "ready" ? followUpsFor(messages, pageContext) : []),
     [messages, pageContext, rawStatus],
   );
+
+  useEffect(() => {
+    const firstUser = messages.find((m) => m.role === "user");
+    const text = firstUser
+      ? firstUser.parts
+          .filter((p) => p.type === "text" && p.text)
+          .map((p) => p.text!)
+          .join(" ")
+      : "";
+    if (text) touchChatSession(sessionId, titleFromUserText(text));
+    else touchChatSession(sessionId);
+  }, [messages, sessionId]);
 
   const status =
     rawStatus === "streaming"
