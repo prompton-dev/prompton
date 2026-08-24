@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Required for npm Trusted Publishing (OIDC) — no NPM_TOKEN
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +24,12 @@ jobs:
           version: 10.33.2
       - uses: actions/setup-node@v4
         with:
+          # Trusted publishing needs Node ≥22.14 and npm ≥11.5.1
           node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest && npm --version
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @prompton-dev/core build
       - run: pnpm --filter @prompton-dev/ui build
@@ -33,18 +37,21 @@ jobs:
       - run: pnpm --filter @prompton-dev/indexer build
       - run: pnpm --filter @prompton-dev/starlight build
       - run: pnpm --filter create-prompton build
-      - name: Publish packages (dependency order)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish packages via OIDC (dependency order)
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "NPM_TOKEN secret missing"
-            exit 1
-          fi
-          # core first, then dependents, CLI last
-          pnpm --filter @prompton-dev/core publish --access public --no-git-checks
-          pnpm --filter @prompton-dev/ui publish --access public --no-git-checks
-          pnpm --filter @prompton-dev/agent publish --access public --no-git-checks
-          pnpm --filter @prompton-dev/indexer publish --access public --no-git-checks
-          pnpm --filter @prompton-dev/starlight publish --access public --no-git-checks
-          pnpm --filter create-prompton publish --access public --no-git-checks
+          # Do not set NODE_AUTH_TOKEN / NPM_TOKEN — npm must use GitHub OIDC.
+          # Each package must have a Trusted Publisher on npmjs.com pointing at:
+          #   org: prompton-dev  repo: prompton  workflow: publish.yml
+          set -euo pipefail
+          for pkg in \
+            @prompton-dev/core \
+            @prompton-dev/ui \
+            @prompton-dev/agent \
+            @prompton-dev/indexer \
+            @prompton-dev/starlight \
+            create-prompton
+          do
+            echo "::group::Publish $pkg"
+            pnpm --filter "$pkg" publish --access public --no-git-checks
+            echo "::endgroup::"
+          done

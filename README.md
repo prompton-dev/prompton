@@ -75,12 +75,19 @@ Published under the **`prompton-dev`** npm org:
 - `@prompton-dev/starlight`
 - `create-prompton`
 
-Maintainers: set repo secret `NPM_TOKEN`, then publish via GitHub Release (workflow `publish.yml`) or locally after `npm login`:
+Maintainers publish via **npm Trusted Publishing** (GitHub OIDC) — no `NPM_TOKEN`.
+
+1. **One-time bootstrap** (packages must exist before OIDC can attach): after `npm login`, run `pnpm publish:packages` once locally (or with a short-lived publish token).
+2. On each package at npmjs.com → **Settings → Trusted Publisher → GitHub Actions**:
+   - Organization: `prompton-dev`
+   - Repository: `prompton`
+   - Workflow filename: `publish.yml`
+   - Allowed action: `npm publish`
+3. Later releases: GitHub **Release** or `workflow_dispatch` on `.github/workflows/publish.yml` (uses `id-token: write`, no secrets).
 
 ```bash
 pnpm build:packages
-pnpm --filter create-prompton build
-pnpm publish:packages
+pnpm publish:packages   # bootstrap only
 ```
 
 ## License
