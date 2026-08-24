@@ -52,6 +52,9 @@ npm create prompton@latest my-docs
 
 (Requires publishing `create-prompton` / `@prompton/*` to npm.)
 
-## License
+## Live dogfood
 
-MIT
+- **Site:** https://prompton.bauman.workers.dev  
+- **Source:** https://github.com/prompton-dev/prompton  
+
+Custom domain `prompton.dev` can be attached in the Cloudflare dashboard when ready.
