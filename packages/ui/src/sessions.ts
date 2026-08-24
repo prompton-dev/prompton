@@ -8,6 +8,7 @@ export interface ChatSessionMeta {
 
 const STORAGE_KEY = "prompton_sessions";
 const MAX_SESSIONS = 20;
+export const DEFAULT_CHAT_TITLE = "New chat";
 export const SESSIONS_EVENT = "prompton:sessions";
 
 function canUseStorage(): boolean {
@@ -45,6 +46,11 @@ function writeAll(sessions: ChatSessionMeta[]): void {
   window.dispatchEvent(new CustomEvent(SESSIONS_EVENT));
 }
 
+function isEmptyTitle(title: string): boolean {
+  const t = title.trim();
+  return !t || t === DEFAULT_CHAT_TITLE;
+}
+
 function setSessionCookie(id: string, cookieName = "prompton_sid"): void {
   document.cookie = `${cookieName}=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
 }
@@ -53,9 +59,21 @@ export function listChatSessions(): ChatSessionMeta[] {
   return readAll();
 }
 
+/**
+ * Drop unused empty "New chat" rows. Keeps `keepId` even if still untitled
+ * (the active draft), and always keeps sessions with a real title.
+ */
+export function pruneEmptyChatSessions(keepId?: string | null): ChatSessionMeta[] {
+  const next = readAll().filter(
+    (s) => !isEmptyTitle(s.title) || (keepId != null && s.id === keepId),
+  );
+  writeAll(next);
+  return next;
+}
+
 export function ensureChatSession(
   id: string,
-  title = "New chat",
+  title = DEFAULT_CHAT_TITLE,
 ): ChatSessionMeta {
   const all = readAll();
   const existing = all.find((s) => s.id === id);
@@ -71,12 +89,20 @@ export function touchChatSession(id: string, title?: string): void {
   const idx = all.findIndex((s) => s.id === id);
   const now = Date.now();
   if (idx === -1) {
-    writeAll([{ id, title: title?.trim() || "New chat", updatedAt: now }, ...all]);
+    // First message creates the sidebar entry; bare cookie visits do not.
+    writeAll([
+      {
+        id,
+        title: title?.trim() || DEFAULT_CHAT_TITLE,
+        updatedAt: now,
+      },
+      ...all,
+    ]);
     return;
   }
   const cur = all[idx]!;
   const nextTitle =
-    title?.trim() && (cur.title === "New chat" || !cur.title.trim())
+    title?.trim() && isEmptyTitle(cur.title)
       ? title.trim().slice(0, 72)
       : cur.title;
   const next = [...all];
@@ -86,19 +112,20 @@ export function touchChatSession(id: string, title?: string): void {
 
 export function titleFromUserText(text: string): string {
   const cleaned = text.replace(/\s+/g, " ").trim();
-  if (!cleaned) return "New chat";
+  if (!cleaned) return DEFAULT_CHAT_TITLE;
   return cleaned.length > 56 ? `${cleaned.slice(0, 53)}…` : cleaned;
 }
 
 export function switchChatSession(id: string, cookieName = "prompton_sid"): void {
-  ensureChatSession(id);
+  pruneEmptyChatSessions(id);
   setSessionCookie(id, cookieName);
   navigateToChat();
 }
 
 export function startNewChatSession(cookieName = "prompton_sid"): string {
   const id = crypto.randomUUID();
-  ensureChatSession(id, "New chat");
+  // Drop prior empty drafts; do not list this draft until the first message.
+  pruneEmptyChatSessions(null);
   setSessionCookie(id, cookieName);
   navigateToChat();
   return id;

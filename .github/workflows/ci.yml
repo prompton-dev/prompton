@@ -30,7 +30,11 @@ jobs:
       - run: pnpm --filter @prompton-dev/indexer build
       - run: pnpm --filter @prompton-dev/starlight build
       - run: pnpm --filter create-prompton build
+      # Astro Cloudflare prerender/remote bindings need a token in CI
       - run: pnpm --filter @prompton-dev/starter build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy:
     name: Deploy starter
@@ -67,6 +71,9 @@ jobs:
       - if: steps.check.outputs.skip != 'true'
         run: pnpm exec astro build
         working-directory: examples/starter
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - if: steps.check.outputs.skip != 'true'
         name: Deploy Worker
         uses: cloudflare/wrangler-action@v3

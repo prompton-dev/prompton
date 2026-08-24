@@ -185,7 +185,6 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
           .join(" ")
       : "";
     if (text) touchChatSession(sessionId, titleFromUserText(text));
-    else touchChatSession(sessionId);
   }, [messages, sessionId]);
 
   const status =

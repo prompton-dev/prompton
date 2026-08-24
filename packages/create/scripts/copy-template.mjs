@@ -24,7 +24,6 @@ const SKIP = new Set([
   ".prompton",
   ".dev.vars",
   "worker-configuration.d.ts",
-  "public",
 ]);
 
 function copyDir(src, destDir) {

@@ -21,7 +21,13 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
 <script>
   const STORAGE_KEY = "prompton_sessions";
   const SESSIONS_EVENT = "prompton:sessions";
+  const DEFAULT_TITLE = "New chat";
   const MAX = 20;
+
+  function isEmptyTitle(title) {
+    const t = (title || "").trim();
+    return !t || t === DEFAULT_TITLE;
+  }
 
   function readSessions() {
     try {
@@ -43,20 +49,25 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
     window.dispatchEvent(new CustomEvent(SESSIONS_EVENT));
   }
 
+  /** Keep titled chats; optionally keep one active empty draft. */
+  function pruneEmpty(keepId) {
+    const next = readSessions().filter(
+      (s) => !isEmptyTitle(s.title) || (keepId != null && s.id === keepId),
+    );
+    writeSessions(next);
+    return next;
+  }
+
   function currentSessionId() {
     const match = document.cookie.match(/(?:^|; )prompton_sid=([^;]*)/);
     return match?.[1] ? decodeURIComponent(match[1]) : null;
   }
 
-  function ensureCurrent() {
+  function ensureCookie() {
     let id = currentSessionId();
     if (!id) {
       id = crypto.randomUUID();
       document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-    const all = readSessions();
-    if (!all.some((s) => s.id === id)) {
-      writeSessions([{ id, title: "New chat", updatedAt: Date.now() }, ...all]);
     }
     return id;
   }
@@ -64,23 +75,24 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
   function renderSessionList() {
     const list = document.querySelector("[data-prompton-session-list]");
     if (!list) return;
-    const active = ensureCurrent();
-    const sessions = readSessions();
+    const active = ensureCookie();
+    pruneEmpty(null);
+    const visible = readSessions().filter((s) => !isEmptyTitle(s.title));
     list.replaceChildren();
-    if (sessions.length === 0) {
+    if (visible.length === 0) {
       const empty = document.createElement("p");
       empty.className = "prompton-history__empty";
       empty.textContent = "No chats yet";
       list.appendChild(empty);
       return;
     }
-    for (const session of sessions) {
+    for (const session of visible) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "prompton-history__item";
       btn.dataset.promptonSessionId = session.id;
-      btn.textContent = session.title || "New chat";
-      btn.title = session.title || "New chat";
+      btn.textContent = session.title || DEFAULT_TITLE;
+      btn.title = session.title || DEFAULT_TITLE;
       if (session.id === active) btn.setAttribute("aria-current", "true");
       list.appendChild(btn);
     }
@@ -106,13 +118,13 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
 
   function newChat() {
     const id = crypto.randomUUID();
-    const all = readSessions();
-    writeSessions([{ id, title: "New chat", updatedAt: Date.now() }, ...all]);
+    pruneEmpty(null);
     document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
     goChat();
   }
 
   function switchSession(id) {
+    pruneEmpty(id);
     document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
     goChat();
   }

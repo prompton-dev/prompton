@@ -26,7 +26,8 @@ description: Workers AI, Vectorize, KV, Durable Objects, and AI Gateway.
 
 ## Abuse controls
 
-- `POST /api/prompton/reindex` requires `x-prompton-reindex-secret` and is rate-limited per client IP
+- `POST /api/prompton/reindex` requires `x-prompton-reindex-secret` (or `Authorization: Bearer …`) and is rate-limited per client IP
+- Optionally set Worker var `PROMPTON_REINDEX_ALLOW_ACCESS=1` and protect `/api/prompton/reindex` with [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — Access-authenticated requests may reindex without the shared secret
 - `/agents/*` connection attempts are rate-limited per client IP
 - Chat turns are rate-limited per session Durable Object name
 

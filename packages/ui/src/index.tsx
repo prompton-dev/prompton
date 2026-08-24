@@ -9,7 +9,6 @@ import {
 import { marked } from "marked";
 import type { Citation, PageContext, PromptonClientConfig } from "@prompton-dev/core";
 import {
-  ensureChatSession,
   startNewChatSession,
 } from "./sessions.js";
 
@@ -383,19 +382,11 @@ export function sessionIdFromCookie(cookieName = "prompton_sid"): string {
   if (typeof document === "undefined") return crypto.randomUUID();
   const match = document.cookie.match(new RegExp(`(?:^|; )${cookieName}=([^;]*)`));
   if (match?.[1]) {
-    const id = decodeURIComponent(match[1]);
-    // Keep the active id in the local history list.
-    try {
-      // Dynamic import avoided — sessions is same package; call after export.
-      ensureChatSession(id);
-    } catch {
-      /* ignore */
-    }
-    return id;
+    return decodeURIComponent(match[1]);
   }
   const id = crypto.randomUUID();
   document.cookie = `${cookieName}=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
-  ensureChatSession(id);
+  // Sidebar entry is created on the first user message (touchChatSession).
   return id;
 }
 
@@ -416,11 +407,13 @@ export type { PromptonClientConfig, PageContext, Citation };
 export {
   listChatSessions,
   ensureChatSession,
+  pruneEmptyChatSessions,
   touchChatSession,
   titleFromUserText,
   switchChatSession,
   startNewChatSession,
   readSessionIdFromCookie,
+  DEFAULT_CHAT_TITLE,
   SESSIONS_EVENT,
   type ChatSessionMeta,
 } from "./sessions.js";

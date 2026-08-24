@@ -65,17 +65,30 @@ function seedOnce(env: Env): Promise<void> {
 
 function authorizeReindex(request: Request, env: Env): Response | null {
   const expected = env.PROMPTON_REINDEX_SECRET;
+  const accessEmail = request.headers.get("cf-access-authenticated-user-email");
+  const allowAccess = env.PROMPTON_REINDEX_ALLOW_ACCESS === "1" || env.PROMPTON_REINDEX_ALLOW_ACCESS === "true";
+
+  // Optional: Cloudflare Access on /api/prompton/reindex (email header present after Access).
+  if (allowAccess && accessEmail) {
+    return null;
+  }
+
   if (!expected) {
     return Response.json(
       {
         error:
-          "Reindex is locked. Set the PROMPTON_REINDEX_SECRET Worker secret, then pass it as header x-prompton-reindex-secret.",
+          "Reindex is locked. Set the PROMPTON_REINDEX_SECRET Worker secret, then pass it as header x-prompton-reindex-secret (or Authorization: Bearer …). Optionally set PROMPTON_REINDEX_ALLOW_ACCESS=1 and protect this path with Cloudflare Access.",
       },
       { status: 503 },
     );
   }
-  const got = request.headers.get("x-prompton-reindex-secret");
-  if (got !== expected) {
+
+  const headerSecret = request.headers.get("x-prompton-reindex-secret");
+  const auth = request.headers.get("authorization");
+  const bearer =
+    auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null;
+  const got = headerSecret ?? bearer;
+  if (!got || !timingSafeEqualString(got, expected)) {
     return new Response("Unauthorized", { status: 401 });
   }
   return null;
