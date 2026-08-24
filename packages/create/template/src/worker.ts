@@ -127,12 +127,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Canonical host: www → apex
-    if (url.hostname === "www.prompton.dev") {
-      url.hostname = "prompton.dev";
-      return Response.redirect(url.toString(), 301);
-    }
-
     if (url.pathname === "/api/prompton/reindex") {
       return handleReindex(request, env);
     }

@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const starter = path.resolve(root, "../../examples/starter");
 const dest = path.resolve(root, "template");
+const version = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")).version;
 
 const SKIP = new Set([
   "node_modules",
@@ -23,6 +24,7 @@ const SKIP = new Set([
   ".prompton",
   ".dev.vars",
   "worker-configuration.d.ts",
+  "public",
 ]);
 
 function copyDir(src, destDir) {
@@ -48,13 +50,61 @@ function sanitizeWrangler(filePath) {
   });
   text = text.replace(/"name":\s*"prompton"/, '"name": "prompton-docs"');
   // Drop production custom domains from the scaffold
-  text = text.replace(
-    /,\s*"routes":\s*\[[\s\S]*?\],/,
-    ",",
-  );
+  text = text.replace(/,\s*"routes":\s*\[[\s\S]*?\],/, ",");
   text = text.replace(/"workers_dev":\s*true,\s*/, "");
   text = text.replace(/"preview_urls":\s*true,\s*/, "");
   writeFileSync(filePath, text);
+}
+
+function sanitizePackageJson(filePath) {
+  if (!existsSync(filePath)) return;
+  const pkg = JSON.parse(readFileSync(filePath, "utf8"));
+  pkg.name = "my-docs";
+  pkg.private = true;
+  delete pkg.publishConfig;
+  for (const field of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]) {
+    const deps = pkg[field];
+    if (!deps) continue;
+    for (const [name, range] of Object.entries(deps)) {
+      if (range === "workspace:*" && name.startsWith("@prompton-dev/")) {
+        deps[name] = `^${version}`;
+      }
+    }
+  }
+  writeFileSync(filePath, JSON.stringify(pkg, null, 2) + "\n");
+}
+
+function sanitizeAstroConfig(filePath) {
+  if (!existsSync(filePath)) return;
+  let text = readFileSync(filePath, "utf8");
+  text = text.replace(/site:\s*["']https:\/\/prompton\.dev["']/, 'site: "https://example.com"');
+  text = text.replace(
+    /title:\s*["']Prompton["']/,
+    'title: "Docs"',
+  );
+  text = text.replace(
+    /description:\s*["']Conversational documentation sites on Cloudflare["']/,
+    'description: "Documentation"',
+  );
+  writeFileSync(filePath, text);
+}
+
+function sanitizeWorker(filePath) {
+  if (!existsSync(filePath)) return;
+  let text = readFileSync(filePath, "utf8");
+  // Drop product-site www→apex redirect from scaffolds
+  text = text.replace(
+    /\n\s*\/\/ Canonical host: www → apex\n\s*if \(url\.hostname === "www\.prompton\.dev"\) \{[\s\S]*?\}\n/,
+    "\n",
+  );
+  writeFileSync(filePath, text);
+}
+
+function writeDevVarsExample(dir) {
+  writeFileSync(
+    path.join(dir, ".dev.vars.example"),
+    "PROMPTON_REINDEX_SECRET=dev-reindex-secret\n",
+  );
 }
 
 if (!existsSync(starter)) {
@@ -65,4 +115,8 @@ if (!existsSync(starter)) {
 rmSync(dest, { recursive: true, force: true });
 copyDir(starter, dest);
 sanitizeWrangler(path.join(dest, "wrangler.jsonc"));
-console.log(`Copied starter → ${dest}`);
+sanitizePackageJson(path.join(dest, "package.json"));
+sanitizeAstroConfig(path.join(dest, "astro.config.mjs"));
+sanitizeWorker(path.join(dest, "src/worker.ts"));
+writeDevVarsExample(dest);
+console.log(`Copied starter → ${dest} (packages @ ^${version})`);

@@ -1,0 +1,50 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  npm:
+    name: Publish npm packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @prompton-dev/core build
+      - run: pnpm --filter @prompton-dev/ui build
+      - run: pnpm --filter @prompton-dev/agent build
+      - run: pnpm --filter @prompton-dev/indexer build
+      - run: pnpm --filter @prompton-dev/starlight build
+      - run: pnpm --filter create-prompton build
+      - name: Publish packages (dependency order)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN secret missing"
+            exit 1
+          fi
+          # core first, then dependents, CLI last
+          pnpm --filter @prompton-dev/core publish --access public --no-git-checks
+          pnpm --filter @prompton-dev/ui publish --access public --no-git-checks
+          pnpm --filter @prompton-dev/agent publish --access public --no-git-checks
+          pnpm --filter @prompton-dev/indexer publish --access public --no-git-checks
+          pnpm --filter @prompton-dev/starlight publish --access public --no-git-checks
+          pnpm --filter create-prompton publish --access public --no-git-checks

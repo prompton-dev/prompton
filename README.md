@@ -75,6 +75,14 @@ Published under the **`prompton-dev`** npm org:
 - `@prompton-dev/starlight`
 - `create-prompton`
 
+Maintainers: set repo secret `NPM_TOKEN`, then publish via GitHub Release (workflow `publish.yml`) or locally after `npm login`:
+
+```bash
+pnpm build:packages
+pnpm --filter create-prompton build
+pnpm publish:packages
+```
+
 ## License
 
 MIT

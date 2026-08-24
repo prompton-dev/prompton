@@ -6,14 +6,14 @@ import prompton from "@prompton-dev/starlight";
 import { promptonIndexer } from "@prompton-dev/indexer/astro";
 
 export default defineConfig({
-  site: "https://prompton.dev",
+  site: "https://example.com",
   output: "server",
   adapter: cloudflare(),
   integrations: [
     react(),
     starlight({
-      title: "Prompton",
-      description: "Conversational documentation sites on Cloudflare",
+      title: "Docs",
+      description: "Documentation",
       social: [
         {
           icon: "github",
