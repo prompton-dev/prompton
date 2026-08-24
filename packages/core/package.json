@@ -1,7 +1,7 @@
 {
-  "name": "@prompton/core",
+  "name": "@prompton-dev/core",
   "version": "0.1.0",
-  "description": "Shared types and contracts for Prompton platform adapters",
+  "description": "Shared types and contracts for Prompton",
   "type": "module",
   "exports": {
     ".": {
@@ -13,7 +13,20 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "dev": "tsc -p tsconfig.build.json --watch"
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "prepublishOnly": "pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prompton-dev/prompton.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://prompton.dev",
+  "bugs": {
+    "url": "https://github.com/prompton-dev/prompton/issues"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

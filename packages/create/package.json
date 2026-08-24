@@ -6,15 +6,25 @@
   "bin": {
     "create-prompton": "./dist/cli.js"
   },
-  "files": [
-    "dist",
-    "template"
-  ],
+  "files": ["dist", "template"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node ./scripts/copy-template.mjs",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prompton-dev/prompton.git",
+    "directory": "packages/create"
+  },
+  "homepage": "https://prompton.dev",
+  "bugs": {
+    "url": "https://github.com/prompton-dev/prompton/issues"
+  },
+  "keywords": ["prompton", "starlight", "cloudflare", "create", "docs", "rag"],
   "dependencies": {
     "prompts": "^2.4.2"
   },

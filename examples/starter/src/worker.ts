@@ -1,7 +1,7 @@
 import { handle } from "@astrojs/cloudflare/handler";
 import { routeAgentRequest } from "agents";
-import { DocsAgent, syncDocsIndex, type SyncPayload } from "@prompton/agent";
-import type { DocChunk, IndexManifest, NavItem } from "@prompton/core";
+import { DocsAgent, syncDocsIndex, type SyncPayload } from "@prompton-dev/agent";
+import type { DocChunk, IndexManifest, NavItem } from "@prompton-dev/core";
 
 export { DocsAgent };
 

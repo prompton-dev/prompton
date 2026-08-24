@@ -1,4 +1,4 @@
-import type { DocChunk, IndexManifest, NavItem } from "@prompton/core";
+import type { DocChunk, IndexManifest, NavItem } from "@prompton-dev/core";
 import { glob } from "glob";
 import matter from "gray-matter";
 import { readFile, writeFile, mkdir } from "node:fs/promises";

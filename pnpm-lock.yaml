@@ -29,16 +29,16 @@ importers:
       '@cloudflare/ai-chat':
         specifier: ^0.10.2
         version: 0.10.2(@ai-sdk/react@3.0.267(react@19.2.8)(zod@4.4.3))(agents@0.21.0(@ai-sdk/react@3.0.267(react@19.2.8)(zod@4.4.3))(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@cloudflare/workers-types@5.20260823.1)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(@modelcontextprotocol/server@2.0.0)(ai@7.0.77(zod@4.4.3))(react@19.2.8)(rolldown@1.2.5)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(yaml@2.9.0))(zod@4.4.3))(ai@7.0.77(zod@4.4.3))(react@19.2.8)
-      '@prompton/agent':
+      '@prompton-dev/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@prompton/indexer':
+      '@prompton-dev/indexer':
         specifier: workspace:*
         version: link:../../packages/indexer
-      '@prompton/starlight':
+      '@prompton-dev/starlight':
         specifier: workspace:*
         version: link:../../packages/starlight
-      '@prompton/ui':
+      '@prompton-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       agents:
@@ -84,7 +84,7 @@ importers:
 
   packages/agent:
     dependencies:
-      '@prompton/core':
+      '@prompton-dev/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -134,7 +134,7 @@ importers:
 
   packages/indexer:
     dependencies:
-      '@prompton/core':
+      '@prompton-dev/core':
         specifier: workspace:*
         version: link:../core
       glob:
@@ -159,7 +159,7 @@ importers:
       '@astrojs/react':
         specifier: ^6.0.4
         version: 6.0.4(@types/node@24.13.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(yaml@2.9.0)
-      '@prompton/core':
+      '@prompton-dev/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -172,7 +172,7 @@ importers:
       '@cloudflare/ai-chat':
         specifier: ^0.10.2
         version: 0.10.2(@ai-sdk/react@3.0.267(react@19.2.8)(zod@4.4.3))(agents@0.21.0(@ai-sdk/react@3.0.267(react@19.2.8)(zod@4.4.3))(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@cloudflare/workers-types@5.20260823.1)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(@modelcontextprotocol/server@2.0.0)(ai@7.0.77(zod@4.4.3))(react@19.2.8)(rolldown@1.2.5)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(yaml@2.9.0))(zod@4.4.3))(ai@7.0.77(zod@4.4.3))(react@19.2.8)
-      '@prompton/ui':
+      '@prompton-dev/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/react':
@@ -199,7 +199,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@prompton/core':
+      '@prompton-dev/core':
         specifier: workspace:*
         version: link:../core
       marked:

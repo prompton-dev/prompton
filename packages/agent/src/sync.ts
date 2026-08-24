@@ -1,4 +1,4 @@
-import type { DocChunk, IndexManifest, NavItem, SearchHit } from "@prompton/core";
+import type { DocChunk, IndexManifest, NavItem, SearchHit } from "@prompton-dev/core";
 import { EMBEDDING_MODEL } from "./models.js";
 
 export interface SyncEnv {

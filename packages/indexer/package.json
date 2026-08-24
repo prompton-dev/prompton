@@ -1,5 +1,5 @@
 {
-  "name": "@prompton/indexer",
+  "name": "@prompton-dev/indexer",
   "version": "0.1.0",
   "description": "Index Starlight content into Vectorize and KV for Prompton RAG",
   "type": "module",
@@ -16,16 +16,27 @@
   "bin": {
     "prompton-index": "./dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "dev": "tsc -p tsconfig.build.json --watch"
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "prepublishOnly": "pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prompton-dev/prompton.git",
+    "directory": "packages/indexer"
+  },
+  "homepage": "https://prompton.dev",
+  "bugs": {
+    "url": "https://github.com/prompton-dev/prompton/issues"
   },
   "dependencies": {
-    "@prompton/core": "workspace:*",
+    "@prompton-dev/core": "workspace:*",
     "gray-matter": "^4.0.3",
     "glob": "^11.0.3"
   },

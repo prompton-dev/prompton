@@ -1,5 +1,5 @@
 {
-  "name": "@prompton/agent",
+  "name": "@prompton-dev/agent",
   "version": "0.1.0",
   "description": "Prompton DocsAgent for conversational Starlight docs",
   "type": "module",
@@ -9,13 +9,24 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "dev": "tsc -p tsconfig.build.json --watch"
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "prepublishOnly": "pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prompton-dev/prompton.git",
+    "directory": "packages/agent"
+  },
+  "homepage": "https://prompton.dev",
+  "bugs": {
+    "url": "https://github.com/prompton-dev/prompton/issues"
   },
   "peerDependencies": {
     "@cloudflare/ai-chat": "^0.10.0",
@@ -25,7 +36,7 @@
     "zod": "^3.23.0 || ^4.0.0"
   },
   "dependencies": {
-    "@prompton/core": "workspace:*"
+    "@prompton-dev/core": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/ai-chat": "^0.10.2",

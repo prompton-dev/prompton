@@ -30,7 +30,7 @@ The custom Worker routes `/agents/*` to the Agents SDK first, then falls through
 ```ts
 import { handle } from "@astrojs/cloudflare/handler";
 import { routeAgentRequest } from "agents";
-import { DocsAgent } from "@prompton/agent";
+import { DocsAgent } from "@prompton-dev/agent";
 
 export { DocsAgent };
 

@@ -24,13 +24,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @prompton/core build
-      - run: pnpm --filter @prompton/ui build
-      - run: pnpm --filter @prompton/agent build
-      - run: pnpm --filter @prompton/indexer build
-      - run: pnpm --filter @prompton/starlight build
+      - run: pnpm --filter @prompton-dev/core build
+      - run: pnpm --filter @prompton-dev/ui build
+      - run: pnpm --filter @prompton-dev/agent build
+      - run: pnpm --filter @prompton-dev/indexer build
+      - run: pnpm --filter @prompton-dev/starlight build
       - run: pnpm --filter create-prompton build
-      - run: pnpm --filter @prompton/starter build
+      - run: pnpm --filter @prompton-dev/starter build
 
   deploy:
     name: Deploy starter
@@ -63,7 +63,7 @@ jobs:
       - if: steps.check.outputs.skip != 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.check.outputs.skip != 'true'
-        run: pnpm --filter @prompton/core --filter @prompton/ui --filter @prompton/agent --filter @prompton/indexer --filter @prompton/starlight build
+        run: pnpm --filter @prompton-dev/core --filter @prompton-dev/ui --filter @prompton-dev/agent --filter @prompton-dev/indexer --filter @prompton-dev/starlight build
       - if: steps.check.outputs.skip != 'true'
         run: pnpm exec astro build
         working-directory: examples/starter

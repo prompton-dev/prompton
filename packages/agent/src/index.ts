@@ -7,7 +7,7 @@ import {
   createUIMessageStreamResponse,
   generateText,
 } from "ai";
-import type { PageContext, SearchHit } from "@prompton/core";
+import type { PageContext, SearchHit } from "@prompton-dev/core";
 import { CHAT_MODEL, EMBEDDING_MODEL } from "./models.js";
 import { lexicalSearch, loadChunksFromKv } from "./sync.js";
 

@@ -27,7 +27,7 @@ export default function promptonStarlight(options: PromptonStarlightOptions = {}
   ];
 
   return {
-    name: "@prompton/starlight",
+    name: "@prompton-dev/starlight",
     hooks: {
       "config:setup"({
         config,
@@ -58,8 +58,8 @@ export default function promptonStarlight(options: PromptonStarlightOptions = {}
           },
           customCss: [
             ...(config.customCss ?? []),
-            "@prompton/starlight/styles.css",
-            "@prompton/ui/styles.css",
+            "@prompton-dev/starlight/styles.css",
+            "@prompton-dev/ui/styles.css",
           ],
         });
 

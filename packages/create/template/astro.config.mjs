@@ -2,8 +2,8 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import prompton from "@prompton/starlight";
-import { promptonIndexer } from "@prompton/indexer/astro";
+import prompton from "@prompton-dev/starlight";
+import { promptonIndexer } from "@prompton-dev/indexer/astro";
 
 export default defineConfig({
   site: "https://prompton.dev",

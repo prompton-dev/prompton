@@ -5,8 +5,8 @@ import {
   browseUrlForSlug,
   type ChatMessage,
   type ChatPart,
-} from "@prompton/ui";
-import type { Citation, PageContext, SearchHit } from "@prompton/core";
+} from "@prompton-dev/ui";
+import type { Citation, PageContext, SearchHit } from "@prompton-dev/core";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 

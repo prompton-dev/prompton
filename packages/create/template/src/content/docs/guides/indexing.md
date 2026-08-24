@@ -5,7 +5,7 @@ description: How Prompton turns Markdown into Vectorize vectors and KV pages.
 
 ## Build-time index
 
-On `astro build`, the `@prompton/indexer` integration:
+On `astro build`, the `@prompton-dev/indexer` integration:
 
 1. Reads `src/content/docs/**/*.{md,mdx}`
 2. Chunks on headings

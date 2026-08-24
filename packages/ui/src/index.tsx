@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { marked } from "marked";
-import type { Citation, PageContext, PromptonClientConfig } from "@prompton/core";
+import type { Citation, PageContext, PromptonClientConfig } from "@prompton-dev/core";
 
 export type ChatRole = "user" | "assistant" | "system";
 

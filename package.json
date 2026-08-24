@@ -3,16 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @prompton/starter dev",
+    "dev": "pnpm --filter @prompton-dev/starter dev",
     "build": "pnpm -r --filter '!create-prompton' build",
     "build:packages": "pnpm -r --filter './packages/*' build",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "publish:packages": "pnpm --filter './packages/*' --filter '!@prompton-dev/starter' publish --access public --no-git-checks"
   },
   "engines": {
     "node": ">=22"
   },
   "packageManager": "pnpm@10.33.2",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
+  },
   "devDependencies": {
     "typescript": "^5.9.2"
   }

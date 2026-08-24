@@ -22,16 +22,16 @@ Self-hosted **agent-based docs** on [Astro Starlight](https://starlight.astro.bu
 
 ```bash
 pnpm install
-pnpm --filter @prompton/agent build
-pnpm --filter @prompton/starlight build
-pnpm --filter @prompton/starter dev
+pnpm --filter @prompton-dev/agent build
+pnpm --filter @prompton-dev/starlight build
+pnpm --filter @prompton-dev/starter dev
 ```
 
 Chat needs Workers AI (remote). After preview is up:
 
 ```bash
 # secret lives in examples/starter/.dev.vars
-pnpm --filter @prompton/starter reindex
+pnpm --filter @prompton-dev/starter reindex
 ```
 
 ## Deploy
@@ -66,7 +66,14 @@ Optional repo variable: `PROMPTON_URL` (defaults to `https://prompton.dev`).
 npm create prompton@latest my-docs
 ```
 
-(Requires publishing `create-prompton` / `@prompton/*` to npm.)
+Published under the **`prompton-dev`** npm org:
+
+- `@prompton-dev/core`
+- `@prompton-dev/ui`
+- `@prompton-dev/agent`
+- `@prompton-dev/indexer`
+- `@prompton-dev/starlight`
+- `create-prompton`
 
 ## License
 

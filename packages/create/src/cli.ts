@@ -81,8 +81,9 @@ Before deploy, create Vectorize + KV and update wrangler.jsonc:
   npx wrangler kv namespace create PROMPTON_DOCS
   npx wrangler kv namespace create PROMPTON_SESSION
 
-  npm run index
   npm run deploy
+  curl -X POST -H "x-prompton-reindex-secret: $PROMPTON_REINDEX_SECRET" \\
+    https://<your-worker>.workers.dev/api/prompton/reindex
 `);
 }
 
