@@ -14,6 +14,10 @@ export default defineConfig({
     starlight({
       title: "Prompton",
       description: "Conversational documentation sites on Cloudflare",
+      logo: {
+        src: "./src/assets/logo.svg",
+        alt: "Prompton",
+      },
       social: [
         {
           icon: "github",

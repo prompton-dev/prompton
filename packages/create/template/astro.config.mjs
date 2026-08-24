@@ -14,6 +14,10 @@ export default defineConfig({
     starlight({
       title: "Docs",
       description: "Documentation",
+      logo: {
+        src: "./src/assets/logo.svg",
+        alt: "Prompton",
+      },
       social: [
         {
           icon: "github",

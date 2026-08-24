@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PromptonChat,
   sessionIdFromCookie,
-  browseUrlForSlug,
   resetChatSession,
   touchChatSession,
   titleFromUserText,
@@ -147,28 +146,14 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
     resetChatSession();
   }, []);
 
+  // retrieve-then-generate agent — no client tools (navigateTo removed)
   const {
     messages: rawMessages,
     sendMessage,
     status: rawStatus,
     stop,
     error: chatError,
-  } = useAgentChat({
-    agent,
-    onToolCall: async ({ toolCall, addToolOutput }) => {
-      if (toolCall.toolName === "navigateTo") {
-        const input = toolCall.input as { slug?: string };
-        const slug = input?.slug ?? "";
-        addToolOutput({
-          toolCallId: toolCall.toolCallId,
-          output: { ok: true, slug, navigating: true },
-        });
-        if (slug) {
-          setTimeout(() => onNavigate(browseUrlForSlug(slug)), 50);
-        }
-      }
-    },
-  });
+  } = useAgentChat({ agent });
 
   const messages = useMemo(() => uiMessagesToChatMessages(rawMessages as never), [rawMessages]);
   const followUps = useMemo(

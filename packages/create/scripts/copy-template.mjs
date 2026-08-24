@@ -102,7 +102,12 @@ function sanitizeWorker(filePath) {
 function writeDevVarsExample(dir) {
   writeFileSync(
     path.join(dir, ".dev.vars.example"),
-    "PROMPTON_REINDEX_SECRET=dev-reindex-secret\n",
+    [
+      "PROMPTON_REINDEX_SECRET=dev-reindex-secret",
+      "# Optional: allow Cloudflare Access–authenticated reindex without the secret",
+      "# PROMPTON_REINDEX_ALLOW_ACCESS=1",
+      "",
+    ].join("\n"),
   );
 }
 
