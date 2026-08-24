@@ -44,6 +44,28 @@ export interface Citation {
   excerpt?: string;
 }
 
+/** GitHub / Starlight–compatible heading id for in-page anchors. */
+export function headingSlug(heading: string): string {
+  return heading
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** Browse URL for a docs slug, optionally deep-linking to a heading. */
+export function docsUrlForChunk(slug: string, heading?: string, title?: string): string {
+  const clean = (slug || "").replace(/^\/+|\/+$/g, "");
+  const path = !clean || clean === "index" ? "/" : `/${clean}/`;
+  if (!heading?.trim() || (title && heading.trim() === title.trim())) return path;
+  const hash = headingSlug(heading);
+  return hash ? `${path}#${hash}` : path;
+}
+
 export interface PromptonClientConfig {
   /** Durable Object / agent class name */
   agentName: string;

@@ -30,8 +30,8 @@
 }
 
 .prompton-chat-shell {
-  min-height: calc(100vh - var(--sl-nav-height) - 2rem);
-  padding: 0.5rem 1rem 1.5rem;
+  min-height: calc(100dvh - var(--sl-nav-height) - 2rem - env(safe-area-inset-bottom, 0px));
+  padding: 0.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
   width: 100%;
   position: relative;
 }
@@ -47,7 +47,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  min-height: calc(100vh - var(--sl-nav-height, 3.5rem) - 4rem);
+  min-height: calc(100dvh - var(--sl-nav-height, 3.5rem) - 4rem);
   text-align: center;
   color: var(--sl-color-gray-2);
   padding: 2rem 1rem;
@@ -56,7 +56,7 @@
 .prompton-chat-ssr__title {
   margin: 0;
   font-size: var(--sl-text-2xl);
-  color: var(--sl-color-white);
+  color: var(--sl-color-text);
   font-weight: 600;
 }
 
@@ -150,10 +150,18 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
   padding: 0.25rem 0.45rem;
 }
 
+.prompton-history__row {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
 .prompton-history__item {
   appearance: none;
   display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: start;
   text-decoration: none;
   border: 0;
@@ -175,7 +183,33 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
 
 .prompton-history__item[aria-current="true"] {
   background: var(--sl-color-accent-low);
-  color: var(--sl-color-white);
+  color: var(--sl-color-text);
+}
+
+.prompton-history__delete {
+  appearance: none;
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--sl-color-gray-3);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.prompton-history__row:hover .prompton-history__delete,
+.prompton-history__delete:focus-visible {
+  opacity: 1;
+}
+
+.prompton-history__delete:hover {
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-text);
 }
 
 [data-prompton-pane="chat"][hidden],

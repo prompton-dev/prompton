@@ -4,7 +4,7 @@
 .prompton-chat {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--sl-nav-height, 3.5rem) - 1rem);
+  height: calc(100dvh - var(--sl-nav-height, 3.5rem) - 1rem - env(safe-area-inset-bottom, 0px));
   min-height: 28rem;
   max-width: 48rem;
   margin-inline: auto;
@@ -71,7 +71,7 @@
 .prompton-chat__empty h2 {
   margin: 0;
   font-size: var(--sl-text-2xl);
-  color: var(--sl-color-white);
+  color: var(--sl-color-text);
 }
 
 .prompton-chat__empty p {
@@ -90,7 +90,7 @@
 }
 
 .prompton-chat__context strong {
-  color: var(--sl-color-white);
+  color: var(--sl-color-text);
   font-weight: 600;
 }
 
@@ -327,21 +327,53 @@
 
 .prompton-chat__error {
   margin-bottom: 0.65rem;
-  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--sl-color-red-high, var(--sl-color-gray-5));
+  background: var(--sl-color-red-low, var(--sl-color-bg-nav));
+  color: var(--sl-color-text);
   border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--sl-color-red-high, #f87171) 45%, transparent);
-  background: color-mix(in srgb, var(--sl-color-red-low, #7f1d1d) 35%, transparent);
-  color: var(--sl-color-white);
+  padding: 0.55rem 0.75rem;
   font-size: var(--sl-text-sm);
+}
+
+.prompton-chat__error-body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .prompton-chat__error-detail {
+  display: block;
   font-size: var(--sl-text-xs);
   color: var(--sl-color-gray-2);
-  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.prompton-chat__error-retry {
+  appearance: none;
+  flex-shrink: 0;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text);
+  font: inherit;
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.prompton-chat__error-retry:hover:not(:disabled) {
+  background: var(--sl-color-bg-nav);
+}
+
+.prompton-chat__error-retry:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .prompton-chat__form {

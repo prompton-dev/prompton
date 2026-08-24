@@ -50,37 +50,55 @@ const suggestions = prompton?.suggestions ?? [
 </div>
 
 <script>
+  function currentMode() {
+    return new URLSearchParams(window.location.search).get("mode") === "chat" ? "chat" : "browse";
+  }
+
   function applyPromptonMode() {
-    const mode = new URLSearchParams(window.location.search).get("mode") === "chat" ? "chat" : "browse";
+    const mode = currentMode();
     document.documentElement.setAttribute("data-prompton-mode", mode);
     document.querySelectorAll(".prompton-page").forEach((root) => {
       root.setAttribute("data-prompton-mode", mode);
     });
     document.querySelectorAll(".prompton-mode-toggle a").forEach((a) => {
-      const isChat = a.getAttribute("href")?.includes("mode=chat");
-      if ((mode === "chat" && isChat) || (mode === "browse" && !isChat)) {
-        a.setAttribute("aria-current", "true");
-      } else {
-        a.removeAttribute("aria-current");
-      }
+      const linkMode = a.getAttribute("data-prompton-mode-link");
+      if (linkMode === mode) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
     });
     document.querySelectorAll("[data-prompton-chat-only]").forEach((el) => {
       if (mode === "chat") el.removeAttribute("hidden");
       else el.setAttribute("hidden", "");
     });
+    // Let the sidebar refresh its chat list without a full navigation.
+    window.dispatchEvent(new CustomEvent("prompton:mode", { detail: { mode } }));
   }
 
   function toggleMode(next) {
+    if (currentMode() === next) return;
     const u = new URL(window.location.href);
     if (next === "chat") u.searchParams.set("mode", "chat");
     else u.searchParams.delete("mode");
     const q = u.searchParams.toString();
-    window.location.href = u.pathname + (q ? `?${q}` : "");
+    const href = u.pathname + (q ? `?${q}` : "");
+    window.history.pushState({}, "", href);
+    applyPromptonMode();
   }
 
   applyPromptonMode();
   document.addEventListener("astro:page-load", applyPromptonMode);
   window.addEventListener("popstate", applyPromptonMode);
+
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest("[data-prompton-mode-link]");
+    if (!(link instanceof HTMLAnchorElement)) return;
+    const next = link.getAttribute("data-prompton-mode-link");
+    if (next !== "chat" && next !== "browse") return;
+    // Same-document soft switch — keep chat island mounted.
+    e.preventDefault();
+    toggleMode(next);
+  });
 
   document.addEventListener("keydown", (e) => {
     const target = e.target;
@@ -89,11 +107,13 @@ const suggestions = prompton?.suggestions ?? [
       (target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable);
-    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (typing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
     if (e.key === "c" || e.key === "C") {
+      if (currentMode() === "chat") return;
       e.preventDefault();
       toggleMode("chat");
     } else if (e.key === "b" || e.key === "B") {
+      if (currentMode() === "browse") return;
       e.preventDefault();
       toggleMode("browse");
     }

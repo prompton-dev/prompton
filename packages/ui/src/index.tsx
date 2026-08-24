@@ -8,6 +8,7 @@ import {
 } from "react";
 import { marked } from "marked";
 import type { Citation, PageContext, PromptonClientConfig } from "@prompton-dev/core";
+import { docsUrlForChunk } from "@prompton-dev/core";
 import {
   startNewChatSession,
 } from "./sessions.js";
@@ -34,7 +35,8 @@ export interface PromptonChatProps {
   error?: string | null;
   onSend: (text: string) => void | Promise<void>;
   onStop?: () => void;
-  onNavigate?: (slug: string) => void;
+  /** Navigate to a browse URL (path + optional hash). */
+  onNavigate?: (href: string) => void;
   onNewChat?: () => void;
   suggestions?: string[];
   /** Contextual prompts shown under the latest assistant reply */
@@ -88,10 +90,13 @@ export function PromptonChat({
   connection = "connected",
 }: PromptonChatProps) {
   const [input, setInput] = useState("");
+  const [lastSent, setLastSent] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const busy = status === "submitted" || status === "streaming";
+  const offline = connection !== "connected";
+  const canSend = !busy && !offline;
   const waitingForReply =
     busy &&
     (messages.length === 0 ||
@@ -137,11 +142,12 @@ export function PromptonChat({
   const submit = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || busy) return;
+      if (!trimmed || busy || offline) return;
+      setLastSent(trimmed);
       setInput("");
       await onSend(trimmed);
     },
-    [busy, onSend],
+    [busy, offline, onSend],
   );
 
   const onSubmit = (e: FormEvent) => {
@@ -179,7 +185,7 @@ export function PromptonChat({
             ? waitingForReply
               ? "Thinking…"
               : "Writing…"
-            : "Ready · press / to focus";
+            : "Ready · / focus · C chat · B browse";
 
   return (
     <div className="prompton-chat" data-prompton-chat>
@@ -279,11 +285,13 @@ export function PromptonChat({
                         key={`${c.slug}-${c.heading ?? ""}`}
                         type="button"
                         className="prompton-citation"
-                        onClick={() => onNavigate?.(c.slug)}
+                        onClick={() =>
+                          onNavigate?.(c.url || docsUrlForChunk(c.slug, c.heading, c.title))
+                        }
                         title={c.excerpt}
                       >
                         {c.title}
-                        {c.heading ? ` · ${c.heading}` : ""}
+                        {c.heading && c.heading !== c.title ? ` · ${c.heading}` : ""}
                       </button>
                     ))}
                   </div>
@@ -324,8 +332,20 @@ export function PromptonChat({
       <div className="prompton-chat__composer">
         {error ? (
           <div className="prompton-chat__error" role="alert">
-            Something went wrong. Check your connection and try again.
-            <span className="prompton-chat__error-detail">{error}</span>
+            <div className="prompton-chat__error-body">
+              Something went wrong. Check your connection and try again.
+              <span className="prompton-chat__error-detail">{error}</span>
+            </div>
+            {lastSent ? (
+              <button
+                type="button"
+                className="prompton-chat__error-retry"
+                onClick={() => void submit(lastSent)}
+                disabled={!canSend}
+              >
+                Retry
+              </button>
+            ) : null}
           </div>
         ) : null}
         <form className="prompton-chat__form" onSubmit={onSubmit}>
@@ -336,18 +356,26 @@ export function PromptonChat({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={
-              pageContext ? `Ask about ${pageContext.title}…` : "Ask about the docs…"
+              offline
+                ? "Connecting to chat…"
+                : pageContext
+                  ? `Ask about ${pageContext.title}…`
+                  : "Ask about the docs…"
             }
             rows={1}
             aria-label="Chat message"
-            disabled={busy && !onStop}
+            disabled={(busy && !onStop) || offline}
           />
           {busy && onStop ? (
             <button type="button" className="prompton-chat__submit" onClick={onStop}>
               Stop
             </button>
           ) : (
-            <button type="submit" className="prompton-chat__submit" disabled={!input.trim() || busy}>
+            <button
+              type="submit"
+              className="prompton-chat__submit"
+              disabled={!input.trim() || !canSend}
+            >
               Send
             </button>
           )}
@@ -390,11 +418,14 @@ export function sessionIdFromCookie(cookieName = "prompton_sid"): string {
   return id;
 }
 
-export function browseUrlForSlug(slug: string): string {
-  const path = slug.startsWith("/") ? slug : `/${slug}`;
-  const url = new URL(path.endsWith("/") || path === "/" ? path : `${path}/`, window.location.origin);
+export function browseUrlForSlug(slug: string, heading?: string, title?: string): string {
+  const path = docsUrlForChunk(slug, heading, title);
+  const hashIdx = path.indexOf("#");
+  const pathname = hashIdx >= 0 ? path.slice(0, hashIdx) : path;
+  const hash = hashIdx >= 0 ? path.slice(hashIdx) : "";
+  const url = new URL(pathname, window.location.origin);
   url.searchParams.delete("mode");
-  return url.pathname + url.search;
+  return url.pathname + url.search + hash;
 }
 
 /** Start a fresh chat session (new Durable Object name via cookie). */
@@ -408,6 +439,7 @@ export {
   listChatSessions,
   ensureChatSession,
   pruneEmptyChatSessions,
+  deleteChatSession,
   touchChatSession,
   titleFromUserText,
   switchChatSession,

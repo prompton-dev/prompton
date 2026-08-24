@@ -8,6 +8,7 @@ import {
   generateText,
 } from "ai";
 import type { Citation, PageContext, SearchHit } from "@prompton-dev/core";
+import { docsUrlForChunk } from "@prompton-dev/core";
 import { CHAT_MODEL, EMBEDDING_MODEL } from "./models.js";
 import { lexicalSearch, loadChunksFromKv } from "./sync.js";
 import { consumeRateLimit } from "./rate-limit.js";
@@ -94,7 +95,7 @@ export function citationsFromHits(hits: SearchHit[], max = 4): Citation[] {
       slug: h.slug,
       title: h.title,
       heading: h.heading || undefined,
-      url: h.url,
+      url: docsUrlForChunk(h.slug, h.heading || undefined, h.title),
       excerpt: h.excerpt,
     });
     if (out.length >= max) break;

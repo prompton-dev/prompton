@@ -122,6 +122,16 @@ export function switchChatSession(id: string, cookieName = "prompton_sid"): void
   navigateToChat();
 }
 
+export function deleteChatSession(id: string, cookieName = "prompton_sid"): void {
+  const remaining = readAll().filter((s) => s.id !== id);
+  writeAll(remaining);
+  if (readSessionIdFromCookie(cookieName) === id) {
+    const next = remaining[0]?.id ?? crypto.randomUUID();
+    setSessionCookie(next, cookieName);
+    if (!remaining[0]) pruneEmptyChatSessions(null);
+  }
+}
+
 export function startNewChatSession(cookieName = "prompton_sid"): string {
   const id = crypto.randomUUID();
   // Drop prior empty drafts; do not list this draft until the first message.

@@ -49,7 +49,6 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
     window.dispatchEvent(new CustomEvent(SESSIONS_EVENT));
   }
 
-  /** Keep titled chats; optionally keep one active empty draft. */
   function pruneEmpty(keepId) {
     const next = readSessions().filter(
       (s) => !isEmptyTitle(s.title) || (keepId != null && s.id === keepId),
@@ -63,11 +62,15 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
     return match?.[1] ? decodeURIComponent(match[1]) : null;
   }
 
+  function setCookie(id) {
+    document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+  }
+
   function ensureCookie() {
     let id = currentSessionId();
     if (!id) {
       id = crypto.randomUUID();
-      document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+      setCookie(id);
     }
     return id;
   }
@@ -75,8 +78,9 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
   function renderSessionList() {
     const list = document.querySelector("[data-prompton-session-list]");
     if (!list) return;
-    const active = ensureCookie();
+    ensureCookie();
     pruneEmpty(null);
+    const active = currentSessionId();
     const visible = readSessions().filter((s) => !isEmptyTitle(s.title));
     list.replaceChildren();
     if (visible.length === 0) {
@@ -87,6 +91,9 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
       return;
     }
     for (const session of visible) {
+      const row = document.createElement("div");
+      row.className = "prompton-history__row";
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "prompton-history__item";
@@ -94,7 +101,16 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
       btn.textContent = session.title || DEFAULT_TITLE;
       btn.title = session.title || DEFAULT_TITLE;
       if (session.id === active) btn.setAttribute("aria-current", "true");
-      list.appendChild(btn);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "prompton-history__delete";
+      del.dataset.promptonDeleteSession = session.id;
+      del.setAttribute("aria-label", `Delete ${session.title || "chat"}`);
+      del.textContent = "×";
+
+      row.append(btn, del);
+      list.appendChild(row);
     }
   }
 
@@ -119,14 +135,26 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
   function newChat() {
     const id = crypto.randomUUID();
     pruneEmpty(null);
-    document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+    setCookie(id);
     goChat();
   }
 
   function switchSession(id) {
     pruneEmpty(id);
-    document.cookie = `prompton_sid=${encodeURIComponent(id)}; path=/; max-age=31536000; SameSite=Lax`;
+    setCookie(id);
     goChat();
+  }
+
+  function deleteSession(id) {
+    const remaining = readSessions().filter((s) => s.id !== id);
+    writeSessions(remaining);
+    if (currentSessionId() === id) {
+      const next = remaining[0]?.id ?? crypto.randomUUID();
+      setCookie(next);
+      goChat();
+      return;
+    }
+    renderSessionList();
   }
 
   syncSidebarChatBits();
@@ -136,6 +164,7 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
       renderSessionList();
     }
   });
+  window.addEventListener("prompton:mode", syncSidebarChatBits);
 
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -143,6 +172,13 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
     if (target.closest("[data-prompton-new-chat]")) {
       event.preventDefault();
       newChat();
+      return;
+    }
+    const del = target.closest("[data-prompton-delete-session]");
+    if (del instanceof HTMLElement && del.dataset.promptonDeleteSession) {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteSession(del.dataset.promptonDeleteSession);
       return;
     }
     const item = target.closest("[data-prompton-session-id]");

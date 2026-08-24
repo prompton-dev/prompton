@@ -1,4 +1,5 @@
 import type { DocChunk, IndexManifest, NavItem, SearchHit } from "@prompton-dev/core";
+import { docsUrlForChunk } from "@prompton-dev/core";
 import { EMBEDDING_MODEL } from "./models.js";
 
 export interface SyncEnv {
@@ -61,7 +62,7 @@ export async function syncDocsIndex(env: SyncEnv, payload: SyncPayload): Promise
             title: c.title,
             heading: c.heading,
             excerpt: c.content.slice(0, 240),
-            url: c.slug ? `/${c.slug}/` : "/",
+            url: docsUrlForChunk(c.slug, c.heading, c.title),
             content: c.content.slice(0, 500),
           },
         })),
@@ -109,7 +110,7 @@ export function lexicalSearch(chunks: DocChunk[], query: string, topK = 6): Sear
       heading: c.heading,
       excerpt: c.content.slice(0, 240),
       score,
-      url: c.slug ? `/${c.slug}/` : "/",
+      url: docsUrlForChunk(c.slug, c.heading, c.title),
     }));
 }
 

@@ -21,6 +21,16 @@ const chatHref = (() => {
 ---
 
 <div class="prompton-mode-toggle" role="group" aria-label="Documentation mode">
-  <a href={browseHref} aria-current={mode === "browse" ? "true" : undefined}>Browse</a>
-  <a href={chatHref} aria-current={mode === "chat" ? "true" : undefined}>Chat</a>
+  <a
+    href={browseHref}
+    data-prompton-mode-link="browse"
+    title="Browse docs (B)"
+    aria-current={mode === "browse" ? "true" : undefined}
+  >Browse</a>
+  <a
+    href={chatHref}
+    data-prompton-mode-link="chat"
+    title="Chat with docs (C)"
+    aria-current={mode === "chat" ? "true" : undefined}
+  >Chat</a>
 </div>

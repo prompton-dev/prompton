@@ -139,8 +139,8 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
     }
   }, [agent, pageContext]);
 
-  const onNavigate = useCallback((slug: string) => {
-    window.location.href = browseUrlForSlug(slug);
+  const onNavigate = useCallback((href: string) => {
+    window.location.href = href;
   }, []);
 
   const onNewChat = useCallback(() => {
@@ -164,7 +164,7 @@ export default function ChatIsland({ agentName, pageContext, suggestions }: Chat
           output: { ok: true, slug, navigating: true },
         });
         if (slug) {
-          setTimeout(() => onNavigate(slug), 50);
+          setTimeout(() => onNavigate(browseUrlForSlug(slug)), 50);
         }
       }
     },
