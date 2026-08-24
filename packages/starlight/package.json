@@ -34,7 +34,7 @@
     "url": "https://github.com/prompton-dev/prompton/issues"
   },
   "peerDependencies": {
-    "@ai-sdk/react": "^2.0.0 || ^3.0.0",
+    "@ai-sdk/react": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "@astrojs/starlight": "^0.35.0 || ^0.36.0 || ^0.37.0 || ^0.38.0 || ^0.39.0 || ^0.40.0 || ^0.41.0",
     "@cloudflare/ai-chat": "^0.10.0",
     "@prompton-dev/ui": "^0.1.0",
@@ -48,17 +48,17 @@
     "@prompton-dev/core": "workspace:*"
   },
   "devDependencies": {
-    "@ai-sdk/react": "^3.0.0",
-    "@astrojs/starlight": "^0.41.7",
+    "@ai-sdk/react": "^4.0.81",
+    "@astrojs/starlight": "^0.41.8",
     "@cloudflare/ai-chat": "^0.10.2",
     "@prompton-dev/ui": "workspace:*",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "agents": "^0.21.0",
-    "astro": "^7.2.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "typescript": "^5.9.2"
+    "astro": "^7.2.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2"
   },
   "license": "MIT"
 }

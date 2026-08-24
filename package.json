@@ -14,11 +14,15 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "pnpm@10.34.5",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.2"
   }
 }

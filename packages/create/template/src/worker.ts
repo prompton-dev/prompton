@@ -63,6 +63,13 @@ function seedOnce(env: Env): Promise<void> {
   return seedPromise;
 }
 
+function timingSafeEqualString(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
 function authorizeReindex(request: Request, env: Env): Response | null {
   const expected = env.PROMPTON_REINDEX_SECRET;
   const accessEmail = request.headers.get("cf-access-authenticated-user-email");
