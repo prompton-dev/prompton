@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  # pnpm workspace — Dependabot reads the root lockfile and updates every
+  # workspace package.json from it, so one entry covers packages/* and examples/*.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    groups:
+      # One PR per week for the routine stuff; majors stay separate so they get
+      # read properly.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+      # These move together and break together — never split them across PRs.
+      astro:
+        patterns:
+          - "astro"
+          - "@astrojs/*"
+        update-types:
+          - major
+      cloudflare:
+        patterns:
+          - "wrangler"
+          - "agents"
+          - "@cloudflare/*"
+          - "workers-ai-provider"
+        update-types:
+          - major
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - "*"
+    labels:
+      - dependencies
+      - ci
