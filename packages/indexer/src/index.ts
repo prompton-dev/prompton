@@ -19,7 +19,7 @@ export interface ChunkedPage {
   chunks: DocChunk[];
 }
 
-function slugFromFile(file: string, contentDir: string): string {
+export function slugFromFile(file: string, contentDir: string): string {
   const rel = path.relative(contentDir, file).replace(/\\/g, "/");
   return rel
     .replace(/\.(md|mdx)$/, "")
@@ -27,7 +27,7 @@ function slugFromFile(file: string, contentDir: string): string {
     .replace(/\/$/, "");
 }
 
-function chunkMarkdown(
+export function chunkMarkdown(
   slug: string,
   title: string,
   body: string,
