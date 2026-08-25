@@ -150,8 +150,26 @@ read — the two implementations must stay in sync on `STORAGE_KEY`, event name,
   That sanitizer works by regex against specific strings in the starter — if you rename or reword
   those lines (the `// Canonical host: www → apex` comment, `"name": "prompton"`, the `site:`/
   `title:` values in `astro.config.mjs`), update `copy-template.mjs` to match.
-- Releasing means bumping the version in all six publishable `package.json`s together (they publish
-  in dependency order and the template pins `^version`).
+- **Releasing goes through changesets.** Add `pnpm changeset` in any PR that changes published
+  behavior, then release with:
+
+  ```bash
+  pnpm version-packages   # changeset version + regenerate the scaffold template
+  # commit, PR, merge, then publish by cutting a GitHub Release
+  ```
+
+  All six published packages are a `fixed` group, so they always move to one shared version even
+  when a changeset touches only one — `create-prompton` pins the others at `^<its own version>` in
+  the generated template, so they cannot drift apart. `@prompton-dev/starter` is in `ignore`.
+
+  `version-packages` deliberately chains `pnpm --filter create-prompton build`: bumping the version
+  changes the deps pinned into `packages/create/template/package.json`, and skipping the rebuild
+  fails CI's template drift check.
+
+  There is intentionally **no changesets bot PR**. Anything opened with the default `GITHUB_TOKEN`
+  does not trigger workflows, so the `Build` check would never report and the branch ruleset would
+  block the merge forever. Run `version-packages` locally and open the PR yourself; a PAT would be
+  the alternative if this is ever automated.
 - Publishing runs on GitHub Release / `workflow_dispatch` via npm **Trusted Publishing (OIDC)** —
   never add `NPM_TOKEN`/`NODE_AUTH_TOKEN` to `.github/workflows/publish.yml`.
 - CI (`.github/workflows/ci.yml`) builds each package explicitly and deploys the starter + reindexes

@@ -9,6 +9,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm --filter create-prompton build",
     "pack:packages": "pnpm --filter @prompton-dev/core --filter @prompton-dev/ui --filter @prompton-dev/agent --filter @prompton-dev/indexer --filter @prompton-dev/starlight --filter create-prompton exec pnpm pack",
     "publish:packages": "pnpm --filter @prompton-dev/core publish --access public --no-git-checks && pnpm --filter @prompton-dev/ui publish --access public --no-git-checks && pnpm --filter @prompton-dev/agent publish --access public --no-git-checks && pnpm --filter @prompton-dev/indexer publish --access public --no-git-checks && pnpm --filter @prompton-dev/starlight publish --access public --no-git-checks && pnpm --filter create-prompton publish --access public --no-git-checks"
   },
@@ -24,6 +26,7 @@
     ]
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.1",
     "typescript": "^7.0.2",
     "vitest": "^3.2.7"
   }

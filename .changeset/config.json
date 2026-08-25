@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "fixed": [
+    [
+      "@prompton-dev/core",
+      "@prompton-dev/ui",
+      "@prompton-dev/agent",
+      "@prompton-dev/indexer",
+      "@prompton-dev/starlight",
+      "create-prompton"
+    ]
+  ],
+  "linked": [],
+  "ignore": ["@prompton-dev/starter"]
+}

@@ -97,6 +97,26 @@ pnpm build:packages
 pnpm publish:packages   # bootstrap only
 ```
 
+### Cutting a release
+
+Changes that affect published packages carry a changeset:
+
+```bash
+pnpm changeset           # describe the change, pick the bump
+```
+
+To release:
+
+```bash
+pnpm version-packages    # bumps all six + writes CHANGELOGs + regenerates the template
+```
+
+Commit, open a PR, merge, then publish by creating a **GitHub Release** — `publish.yml` verifies no
+version is already published, then publishes over OIDC.
+
+All six packages share one version by design: `create-prompton` pins the others at `^<its own
+version>` in the scaffold it generates.
+
 ## Security
 
 Report vulnerabilities privately via [GitHub Security Advisories](https://github.com/prompton-dev/prompton/security/advisories/new). See [SECURITY.md](./SECURITY.md) for the deployment security model — the reindex endpoint and `.dev.vars` are the parts that matter most.
