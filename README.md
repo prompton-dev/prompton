@@ -22,9 +22,16 @@ Self-hosted **agent-based docs** on [Astro Starlight](https://starlight.astro.bu
 
 ```bash
 pnpm install
-pnpm --filter @prompton-dev/agent build
-pnpm --filter @prompton-dev/starlight build
-pnpm --filter @prompton-dev/starter dev
+pnpm build:packages
+pnpm dev
+```
+
+Checks (the same three CI runs):
+
+```bash
+pnpm test        # vitest — pure logic: chunking, ranking, search, rate limits
+pnpm typecheck
+pnpm build:packages
 ```
 
 Chat needs Workers AI (remote). After preview is up:
@@ -89,6 +96,10 @@ Maintainers publish via **npm Trusted Publishing** (GitHub OIDC) — no `NPM_TOK
 pnpm build:packages
 pnpm publish:packages   # bootstrap only
 ```
+
+## Security
+
+Report vulnerabilities privately via [GitHub Security Advisories](https://github.com/prompton-dev/prompton/security/advisories/new). See [SECURITY.md](./SECURITY.md) for the deployment security model — the reindex endpoint and `.dev.vars` are the parts that matter most.
 
 ## License
 
