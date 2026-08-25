@@ -25,7 +25,9 @@ function copyDir(src: string, dest: string) {
       continue;
     }
     const from = path.join(src, entry);
-    const to = path.join(dest, entry);
+    // npm renames a published `.gitignore` to `.npmignore`, so the template
+    // ships it dot-less. Restore the dot so scaffolds ignore secrets/build output.
+    const to = path.join(dest, entry === "gitignore" ? ".gitignore" : entry);
     if (statSync(from).isDirectory()) copyDir(from, to);
     else cpSync(from, to);
   }

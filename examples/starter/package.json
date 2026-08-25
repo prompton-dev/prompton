@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "typecheck": "astro sync && tsc --noEmit -p tsconfig.typecheck.json",
     "preview": "astro build && astro preview",
     "index": "prompton-index --content src/content/docs --out .prompton/index",
     "reindex": "curl -X POST -H \"x-prompton-reindex-secret: ${PROMPTON_REINDEX_SECRET:-dev-reindex-secret}\" http://127.0.0.1:4321/api/prompton/reindex",

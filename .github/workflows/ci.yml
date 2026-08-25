@@ -30,8 +30,17 @@ jobs:
       - run: pnpm --filter @prompton-dev/indexer build
       - run: pnpm --filter @prompton-dev/starlight build
       - run: pnpm --filter create-prompton build
+      # The scaffold template is generated from examples/starter — fail if the
+      # committed copy drifted (i.e. the starter changed without a rebuild).
+      - name: Check scaffold template is in sync
+        run: git diff --exit-code -- packages/create/template
+      - run: pnpm test
       # Astro Cloudflare prerender/remote bindings need a token in CI
       - run: pnpm --filter @prompton-dev/starter build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - run: pnpm typecheck
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -99,6 +99,38 @@ function sanitizeWorker(filePath) {
   writeFileSync(filePath, text);
 }
 
+/**
+ * Scaffolds need an ignore file, but npm renames a published `.gitignore` to
+ * `.npmignore`. Ship it dot-less and let the CLI restore the dot on copy.
+ */
+function writeGitignore(dir) {
+  writeFileSync(
+    path.join(dir, "gitignore"),
+    [
+      "node_modules",
+      "dist",
+      ".astro",
+      ".wrangler",
+      ".prompton",
+      "public/.prompton",
+      "",
+      "# Secrets - never commit",
+      ".dev.vars",
+      ".dev.vars.*",
+      "!.dev.vars.example",
+      ".env",
+      ".env.*",
+      "!.env.example",
+      "",
+      "worker-configuration.d.ts",
+      "*.tsbuildinfo",
+      "*.local",
+      ".DS_Store",
+      "",
+    ].join("\n"),
+  );
+}
+
 function writeDevVarsExample(dir) {
   writeFileSync(
     path.join(dir, ".dev.vars.example"),
@@ -122,5 +154,6 @@ sanitizeWrangler(path.join(dest, "wrangler.jsonc"));
 sanitizePackageJson(path.join(dest, "package.json"));
 sanitizeAstroConfig(path.join(dest, "astro.config.mjs"));
 sanitizeWorker(path.join(dest, "src/worker.ts"));
+writeGitignore(dest);
 writeDevVarsExample(dest);
 console.log(`Copied starter → ${dest} (packages @ ^${version})`);
