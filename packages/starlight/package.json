@@ -1,6 +1,6 @@
 {
   "name": "@prompton-dev/starlight",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Starlight plugin for Prompton conversational docs",
   "type": "module",
   "exports": {

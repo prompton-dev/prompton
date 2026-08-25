@@ -1,6 +1,6 @@
 {
   "name": "create-prompton",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Scaffold a Prompton conversational Starlight docs site on Cloudflare",
   "type": "module",
   "bin": {
