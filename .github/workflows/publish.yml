@@ -37,6 +37,28 @@ jobs:
       - run: pnpm --filter @prompton-dev/indexer build
       - run: pnpm --filter @prompton-dev/starlight build
       - run: pnpm --filter create-prompton build
+      # Publishing is sequential and npm forbids reusing a version, so a missed
+      # bump would publish the first few packages and fail the rest, leaving a
+      # half-released version that cannot be fixed in place. Check all of them
+      # before publishing any.
+      - name: Verify no version is already published
+        run: |
+          set -euo pipefail
+          failed=0
+          for dir in core ui agent indexer starlight create; do
+            name=$(node -p "require('./packages/$dir/package.json').name")
+            version=$(node -p "require('./packages/$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "::error::$name@$version is already published - bump it before releasing."
+              failed=1
+            else
+              echo "$name@$version is unpublished, OK to release"
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "Aborting before any package is published."
+            exit 1
+          fi
       - name: Publish packages via OIDC (dependency order)
         run: |
           # Do not set NODE_AUTH_TOKEN / NPM_TOKEN — npm must use GitHub OIDC.
