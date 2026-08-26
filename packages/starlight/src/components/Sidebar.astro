@@ -2,18 +2,30 @@
 import Default from "@astrojs/starlight/components/Sidebar.astro";
 ---
 
-<div class="prompton-history" data-prompton-chat-only hidden>
+{/*
+  Two labelled groups, not one block: the rule belongs *between* Chats and Docs.
+  It previously sat inside the same element as the "Docs" heading, which drew a
+  divider between that heading and the tree it labels.
+
+  Both groups render in either mode. Chat docks beside the docs now rather than
+  replacing them, so the sidebar is shared chrome — showing this only in chat
+  mode made the nav jump down every time the panel opened.
+*/}
+<nav class="prompton-history" aria-label="Chat history">
   <div class="prompton-history__header">
-    <p class="prompton-history__title">Chats</p>
+    <h2 class="prompton-history__title">Chats</h2>
     <button type="button" class="prompton-history__new" data-prompton-new-chat>
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+        <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+      </svg>
       New
     </button>
   </div>
-  <div class="prompton-history__list" data-prompton-session-list>
+  <ul class="prompton-history__list" data-prompton-session-list>
     <!-- Filled client-side from localStorage -->
-  </div>
-  <p class="prompton-history__title prompton-history__title--docs">Docs</p>
-</div>
+  </ul>
+</nav>
+<p class="prompton-history__title prompton-history__title--docs">Docs</p>
 <Default>
   <slot />
 </Default>
@@ -84,14 +96,14 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
     const visible = readSessions().filter((s) => !isEmptyTitle(s.title));
     list.replaceChildren();
     if (visible.length === 0) {
-      const empty = document.createElement("p");
+      const empty = document.createElement("li");
       empty.className = "prompton-history__empty";
-      empty.textContent = "No chats yet";
+      empty.textContent = "Ask a question to start one.";
       list.appendChild(empty);
       return;
     }
     for (const session of visible) {
-      const row = document.createElement("div");
+      const row = document.createElement("li");
       row.className = "prompton-history__row";
 
       const btn = document.createElement("button");
@@ -107,7 +119,10 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
       del.className = "prompton-history__delete";
       del.dataset.promptonDeleteSession = session.id;
       del.setAttribute("aria-label", `Delete ${session.title || "chat"}`);
-      del.textContent = "×";
+      del.title = "Delete chat";
+      del.innerHTML =
+        '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">' +
+        '<path d="m4.5 4.5 7 7M11.5 4.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
 
       row.append(btn, del);
       list.appendChild(row);
@@ -115,12 +130,7 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
   }
 
   function syncSidebarChatBits() {
-    const mode = new URLSearchParams(window.location.search).get("mode") === "chat" ? "chat" : "browse";
-    document.querySelectorAll("[data-prompton-chat-only]").forEach((el) => {
-      if (mode === "chat") el.removeAttribute("hidden");
-      else el.setAttribute("hidden", "");
-    });
-    if (mode === "chat") renderSessionList();
+    renderSessionList();
   }
 
   function goChat() {
@@ -159,11 +169,7 @@ import Default from "@astrojs/starlight/components/Sidebar.astro";
 
   syncSidebarChatBits();
   document.addEventListener("astro:page-load", syncSidebarChatBits);
-  window.addEventListener(SESSIONS_EVENT, () => {
-    if (new URLSearchParams(window.location.search).get("mode") === "chat") {
-      renderSessionList();
-    }
-  });
+  window.addEventListener(SESSIONS_EVENT, renderSessionList);
   window.addEventListener("prompton:mode", syncSidebarChatBits);
 
   document.addEventListener("click", (event) => {

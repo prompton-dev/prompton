@@ -1,0 +1,113 @@
+---
+/**
+ * Sticky ask-composer pinned to the bottom of the article column.
+ *
+ * Rendered inside `.main-pane` (see TwoColumnContent.astro) so it inherits the
+ * content measure instead of centering over the whole viewport. Deliberately
+ * plain HTML: it must paint on the prerendered page and must not pull the chat
+ * island — or its WebSocket — onto every docs page. It talks to the island
+ * through `prompton:chat-activate` (focus) and `prompton:chat-ask` (submit).
+ */
+const entry = Astro.locals.starlightRoute?.entry;
+const title = entry?.data?.title ?? "these docs";
+---
+
+<div class="prompton-rail" data-prompton-rail>
+  <div class="prompton-rail__scrim" aria-hidden="true"></div>
+  <form class="prompton-rail__form" data-prompton-rail-form>
+    <textarea
+      class="prompton-rail__input"
+      data-prompton-rail-input
+      rows="1"
+      autocomplete="off"
+      placeholder={`Ask about ${title}…`}
+      aria-label={`Ask about ${title}`}></textarea>
+    <button type="submit" class="prompton-rail__send" aria-label="Ask" disabled>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path
+          d="M8 13V3.5M8 3.5 4 7.5M8 3.5l4 4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<script>
+  const ACTIVATE = "prompton:chat-activate";
+  const ASK = "prompton:chat-ask";
+  const FOCUS_RAIL = "prompton:focus-rail";
+
+  function railInput(): HTMLTextAreaElement | null {
+    return document.querySelector("[data-prompton-rail-input]");
+  }
+
+  function autoGrow(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    const next = Math.min(el.scrollHeight, 132);
+    el.style.height = `${next}px`;
+    // Avoid a scrollbar appearing on a single, unwrapped line.
+    el.style.overflowY = el.scrollHeight > 132 ? "auto" : "hidden";
+  }
+
+  /** Send stays inert until there is something to send. */
+  function syncSendState(el: HTMLTextAreaElement) {
+    const button = el.form?.querySelector("button[type=submit]");
+    if (button instanceof HTMLButtonElement) button.disabled = el.value.trim().length === 0;
+  }
+
+  function ask(el: HTMLTextAreaElement) {
+    const text = el.value.trim();
+    if (!text) return;
+    el.value = "";
+    autoGrow(el);
+    syncSendState(el);
+    el.blur();
+    window.dispatchEvent(new CustomEvent(ASK, { detail: { text } }));
+  }
+
+  // Delegated so the rail keeps working across soft navigations.
+  document.addEventListener("focusin", (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest("[data-prompton-rail-input]")) return;
+    // Opening the socket here means the handshake overlaps with typing.
+    window.dispatchEvent(new CustomEvent(ACTIVATE));
+  });
+
+  document.addEventListener("input", (e) => {
+    const target = e.target;
+    if (target instanceof HTMLTextAreaElement && target.dataset.promptonRailInput !== undefined) {
+      autoGrow(target);
+      syncSendState(target);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLTextAreaElement)) return;
+    if (target.dataset.promptonRailInput === undefined) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      ask(target);
+    } else if (e.key === "Escape") {
+      target.blur();
+    }
+  });
+
+  document.addEventListener("submit", (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLFormElement)) return;
+    if (target.dataset.promptonRailForm === undefined) return;
+    e.preventDefault();
+    const input = target.querySelector("textarea");
+    if (input instanceof HTMLTextAreaElement) ask(input);
+  });
+
+  window.addEventListener(FOCUS_RAIL, () => {
+    railInput()?.focus();
+  });
+</script>

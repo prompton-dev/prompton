@@ -2,7 +2,8 @@
 import Default from "@astrojs/starlight/components/PageFrame.astro";
 import ChatIsland from "./ChatIsland";
 
-const entry = Astro.locals.starlightRoute?.entry;
+const route = Astro.locals.starlightRoute;
+const entry = route?.entry;
 const title = entry?.data?.title ?? "Documentation";
 const slug = (entry?.id ?? "").replace(/\.(md|mdx)$/, "");
 
@@ -15,17 +16,32 @@ const agentName =
   prompton?.agentName ??
   "DocsAgent";
 
-const suggestions = prompton?.suggestions ?? [
+const siteSuggestions = prompton?.suggestions ?? [
   "How do I get started?",
   "How does Browse / Chat work?",
   "Which Cloudflare products does Prompton use?",
 ];
+
+/*
+  Starters derived from the page the reader is actually on beat generic
+  site-wide prompts — the docked panel opens on the highest-intent moment there
+  is. Splash pages have no headings, so they keep the configured list.
+*/
+const sectionHeadings = (route?.headings ?? [])
+  .filter((h) => h.depth === 2 && h.text.trim())
+  .slice(0, 2)
+  .map((h) => `Explain ${h.text.trim()}`);
+
+const suggestions = sectionHeadings.length
+  ? [`Summarize ${title}`, ...sectionHeadings]
+  : siteSuggestions;
 ---
 
 {/*
-  Both panes stay in the DOM. Visibility is driven by html[data-prompton-mode],
-  set in Head before paint — required because Starlight prerenders pages and
-  ignores ?mode=chat at build time.
+  Both panes stay in the DOM *and* on screen: chat docks beside the docs rather
+  than replacing them, so the reader never loses their place. Mode is still
+  driven by html[data-prompton-mode], set in Head before paint — required
+  because Starlight prerenders pages and ignores ?mode=chat at build time.
 */}
 <div class="prompton-page">
   <Default>
@@ -60,7 +76,11 @@ const suggestions = prompton?.suggestions ?? [
     document.querySelectorAll(".prompton-page").forEach((root) => {
       root.setAttribute("data-prompton-mode", mode);
     });
-    document.querySelectorAll(".prompton-mode-toggle a").forEach((a) => {
+    document.querySelectorAll("[data-prompton-ask]").forEach((el) => {
+      if (mode === "chat") el.setAttribute("aria-current", "true");
+      else el.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-prompton-mode-link]").forEach((a) => {
       const linkMode = a.getAttribute("data-prompton-mode-link");
       if (linkMode === mode) a.setAttribute("aria-current", "true");
       else a.removeAttribute("aria-current");
@@ -88,9 +108,22 @@ const suggestions = prompton?.suggestions ?? [
   document.addEventListener("astro:page-load", applyPromptonMode);
   window.addEventListener("popstate", applyPromptonMode);
 
+  // Asking from the sticky rail opens the dock; the island handles the send.
+  window.addEventListener("prompton:chat-ask", () => toggleMode("chat"));
+  window.addEventListener("prompton:close-chat", () => toggleMode("browse"));
+
   document.addEventListener("click", (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
+
+    // Single header affordance: opens the panel, and closes it if already open.
+    const ask = target.closest("[data-prompton-ask]");
+    if (ask) {
+      e.preventDefault();
+      toggleMode(currentMode() === "chat" ? "browse" : "chat");
+      return;
+    }
+
     const link = target.closest("[data-prompton-mode-link]");
     if (!(link instanceof HTMLAnchorElement)) return;
     const next = link.getAttribute("data-prompton-mode-link");
@@ -101,6 +134,22 @@ const suggestions = prompton?.suggestions ?? [
   });
 
   document.addEventListener("keydown", (e) => {
+    /*
+      Never steal keys from the search modal. Starlight flags it on <body>, and
+      without this the plain "c"/"b" shortcuts fire on every matching letter the
+      reader types into the search box.
+    */
+    if (document.body.hasAttribute("data-search-modal-open")) return;
+    if (document.querySelector("dialog[open]")) return;
+
+    // Cmd/Ctrl+I focuses the ask rail from anywhere. Cmd+K belongs to search.
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === "i" || e.key === "I")) {
+      if (currentMode() === "chat") return;
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("prompton:focus-rail"));
+      return;
+    }
+
     const target = e.target;
     const typing =
       target instanceof HTMLElement &&
@@ -108,7 +157,12 @@ const suggestions = prompton?.suggestions ?? [
         target.tagName === "TEXTAREA" ||
         target.isContentEditable);
     if (typing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-    if (e.key === "c" || e.key === "C") {
+    if (e.key === "/") {
+      // The panel claims "/" once it is open; while reading, the rail has it.
+      if (currentMode() === "chat") return;
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("prompton:focus-rail"));
+    } else if (e.key === "c" || e.key === "C") {
       if (currentMode() === "chat") return;
       e.preventDefault();
       toggleMode("chat");

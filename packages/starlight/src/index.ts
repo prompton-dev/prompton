@@ -53,6 +53,7 @@ export default function promptonStarlight(options: PromptonStarlightOptions = {}
             ...config.components,
             Head: component("Head.astro"),
             PageFrame: component("PageFrame.astro"),
+            TwoColumnContent: component("TwoColumnContent.astro"),
             Header: component("Header.astro"),
             Search: component("Search.astro"),
             Sidebar: component("Sidebar.astro"),
