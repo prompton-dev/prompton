@@ -48,6 +48,36 @@
   border-color: var(--sl-color-gray-5);
 }
 
+.prompton-chat__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.prompton-chat__close {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--sl-color-gray-3);
+  cursor: pointer;
+}
+
+.prompton-chat__close:hover {
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-text);
+}
+
+.prompton-chat__close:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
 .prompton-chat__messages {
   flex: 1;
   overflow-y: auto;
@@ -447,69 +477,11 @@
   animation: prompton-typing 1.1s ease-in-out infinite;
 }
 
+.prompton-chat__dot--idle {
+  background: var(--sl-color-gray-4);
+}
+
 .prompton-chat__dot--bad {
   background: var(--sl-color-red-high, #f87171);
 }
 
-.prompton-mode-toggle {
-  display: inline-flex;
-  border: 1px solid var(--sl-color-hairline);
-  border-radius: 0.55rem;
-  overflow: hidden;
-  margin-inline: 0.5rem;
-}
-
-.prompton-mode-toggle a {
-  text-decoration: none;
-  color: var(--sl-color-gray-2);
-  font-size: var(--sl-text-sm);
-  font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  background: transparent;
-}
-
-.prompton-mode-toggle a[aria-current="true"] {
-  background: var(--sl-color-accent-low);
-  color: var(--sl-color-white);
-}
-
-.prompton-history {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0 1rem;
-  border-bottom: 1px solid var(--sl-color-hairline);
-  margin-bottom: 0.75rem;
-}
-
-.prompton-history__title {
-  font-size: var(--sl-text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--sl-color-gray-3);
-  margin: 0 0 0.35rem;
-}
-
-.prompton-history__item {
-  font-size: var(--sl-text-sm);
-  color: var(--sl-color-text);
-  text-decoration: none;
-  padding: 0.25rem 0.4rem;
-  border-radius: 0.35rem;
-  background: transparent;
-  border: none;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.prompton-history__item:hover {
-  background: var(--sl-color-gray-6);
-}
-
-.prompton-history__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  margin-bottom: 0.35rem;
-}

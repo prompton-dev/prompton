@@ -6,27 +6,104 @@
   margin-inline-end: 0.35rem;
 }
 
-.prompton-mode-toggle {
+.prompton-ask {
   display: inline-flex;
-  border: 1px solid var(--sl-color-hairline);
-  border-radius: 0.55rem;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
-}
-
-.prompton-mode-toggle a {
   text-decoration: none;
   color: var(--sl-color-gray-2);
   font-size: var(--sl-text-sm);
   font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  background: transparent;
   line-height: 1.4;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.55rem;
+  background: transparent;
 }
 
-.prompton-mode-toggle a[aria-current="true"] {
-  background: var(--sl-color-accent-low);
+.prompton-ask:hover {
   color: var(--sl-color-white);
+  border-color: var(--sl-color-gray-5);
+}
+
+.prompton-ask[aria-current="true"] {
+  background: var(--sl-color-accent-low);
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-white);
+}
+
+.prompton-ask svg {
+  opacity: 0.8;
+}
+
+/*
+  Search-to-ask escalation. Sits at the foot of the search dialog and carries
+  the reader's own query into the composer — a search that finds nothing should
+  become a question, not a dead end.
+*/
+.prompton-search-ask {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: start;
+  /*
+    The dialog frame is the scroll container, so a plain last child lands at the
+    bottom of the *results*, not the bottom of the dialog. Pin it: the escalation
+    should stay reachable however far the reader has scrolled.
+  */
+  position: sticky;
+  /*
+    Offsets are measured from the scrollport's padding edge, so a plain
+    `bottom: 0` leaves the frame's own padding below the row for results to
+    scroll through. Cancel it, and pad the row back out so the label stays put.
+  */
+  bottom: -1.5rem;
+  margin-bottom: -1.5rem;
+  z-index: 1;
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-2);
+  background: var(--sl-color-bg-nav);
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
+  padding: 0.7rem 1rem calc(2.2rem + env(safe-area-inset-bottom, 0px));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* `display: flex` above would otherwise beat the hidden attribute's own rule. */
+.prompton-search-ask[hidden] {
+  display: none;
+}
+
+.prompton-search-ask:hover {
+  background: var(--sl-color-gray-6, var(--sl-color-bg));
+  color: var(--sl-color-white);
+}
+
+.prompton-search-ask:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: -2px;
+}
+
+/* Nothing matched — this is now the reader's best move, so say so plainly. */
+.prompton-search-ask[data-empty] {
+  color: var(--sl-color-white);
+  background: var(--sl-color-accent-low);
+}
+
+.prompton-search-ask svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.prompton-search-ask__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prompton-chat-shell {
@@ -34,6 +111,53 @@
   padding: 0.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
   width: 100%;
   position: relative;
+}
+
+/*
+  Docked chat. Above the sidebar breakpoint the panel takes the slot the table
+  of contents gives up (see the right-sidebar rule below) and the prose stays
+  on screen — the reader never loses their place. Narrow viewports have no room
+  for two columns, so they keep the original swap.
+*/
+@media (min-width: 50rem) {
+  html[data-prompton-mode="chat"] .main-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(20rem, 27vw, 28rem);
+    align-items: start;
+  }
+
+  html[data-prompton-mode="chat"] .prompton-chat-shell {
+    position: sticky;
+    top: var(--sl-nav-height);
+    height: calc(100dvh - var(--sl-nav-height));
+    min-height: 0;
+    padding: 0.5rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    border-inline-start: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg);
+    overflow: hidden;
+  }
+
+  html[data-prompton-mode="chat"] .prompton-chat-shell .prompton-chat {
+    height: 100%;
+    min-height: 0;
+    max-width: none;
+  }
+
+  /* The docked column is narrow — reclaim the gutters for the field itself. */
+  html[data-prompton-mode="chat"] .prompton-chat__composer,
+  html[data-prompton-mode="chat"] .prompton-chat__messages {
+    padding-inline: 0.6rem;
+  }
+
+  html[data-prompton-mode="chat"] .prompton-chat__submit {
+    padding-inline: 0.7rem;
+  }
+}
+
+@media (max-width: 49.999rem) {
+  html[data-prompton-mode="chat"] [data-prompton-pane="browse"] {
+    display: none !important;
+  }
 }
 
 /* Hide SSR fallback once the React island mounts */
@@ -76,6 +200,12 @@ html[data-prompton-mode="chat"] mobile-starlight-toc {
 html[data-prompton-mode="chat"] .main-pane {
   width: 100%;
   max-width: none;
+  /*
+    Starlight offsets the content toward the table of contents with
+    `auto 0`. With the ToC hidden and the dock beside it, that would shove the
+    prose against the panel — recentre it in the column it now owns.
+  */
+  --sl-content-margin-inline: auto;
 }
 
 /* Splash pages omit the docs sidebar — keep chat usable full-width */
@@ -91,8 +221,10 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
 }
 
 .prompton-history {
-  margin: 0 0 1rem;
-  padding: 0 0 0.75rem;
+  display: block;
+  margin: 0 0 0.9rem;
+  padding: 0 0 0.9rem;
+  /* Separates Chats from Docs — never the Docs label from its own tree. */
   border-bottom: 1px solid var(--sl-color-hairline);
 }
 
@@ -101,60 +233,83 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .prompton-history__title {
   margin: 0;
   font-size: var(--sl-text-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--sl-color-gray-3);
+  line-height: 1.4;
 }
 
+/* Sits directly above Starlight's nav, so it only needs space beneath it. */
 .prompton-history__title--docs {
-  margin-top: 0.85rem;
-  margin-bottom: 0.35rem;
+  margin: 0 0 0.5rem;
 }
 
 .prompton-history__new {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   border: 1px solid var(--sl-color-hairline);
   background: transparent;
-  color: var(--sl-color-text);
+  color: var(--sl-color-gray-2);
   font: inherit;
   font-size: var(--sl-text-xs);
   font-weight: 600;
-  padding: 0.15rem 0.45rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.35rem;
   border-radius: 0.35rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .prompton-history__new:hover {
   background: var(--sl-color-bg-nav);
+  border-color: var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+}
+
+.prompton-history__new:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
 }
 
 .prompton-history__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  max-height: 12rem;
+  gap: 0.1rem;
+  /* Capped so a long history can never push the docs nav off screen. */
+  max-height: 13rem;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .prompton-history__empty {
   margin: 0;
   font-size: var(--sl-text-xs);
+  line-height: 1.5;
   color: var(--sl-color-gray-3);
-  padding: 0.25rem 0.45rem;
+  padding: 0.15rem 0.45rem 0.35rem;
 }
 
 .prompton-history__row {
   display: flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.1rem;
   min-width: 0;
+  border-radius: 0.4rem;
+}
+
+.prompton-history__row:hover {
+  background: var(--sl-color-bg-nav);
 }
 
 .prompton-history__item {
@@ -166,10 +321,11 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
   text-decoration: none;
   border: 0;
   background: transparent;
-  color: var(--sl-color-text);
+  color: var(--sl-color-gray-2);
   font: inherit;
   font-size: var(--sl-text-sm);
-  padding: 0.3rem 0.45rem;
+  line-height: 1.4;
+  padding: 0.35rem 0.45rem;
   border-radius: 0.4rem;
   cursor: pointer;
   white-space: nowrap;
@@ -178,38 +334,58 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
 }
 
 .prompton-history__item:hover {
-  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-white);
+}
+
+.prompton-history__item:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: -2px;
+}
+
+/*
+  Match Starlight's own current-page treatment rather than inventing a second
+  "you are here" language two inches above it.
+*/
+.prompton-history__row:has([aria-current="true"]) {
+  background: var(--sl-color-accent-low);
 }
 
 .prompton-history__item[aria-current="true"] {
-  background: var(--sl-color-accent-low);
-  color: var(--sl-color-text);
+  color: var(--sl-color-white);
+  font-weight: 600;
 }
 
 .prompton-history__delete {
   appearance: none;
   flex-shrink: 0;
-  width: 1.6rem;
-  height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-inline-end: 0.15rem;
   border: 0;
-  border-radius: 0.35rem;
+  border-radius: 0.3rem;
   background: transparent;
   color: var(--sl-color-gray-3);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
   cursor: pointer;
-  opacity: 0.35;
+  opacity: 0;
 }
 
+/* Keyboard users get it on focus; pointer users on hover. */
 .prompton-history__row:hover .prompton-history__delete,
 .prompton-history__delete:focus-visible {
   opacity: 1;
 }
 
 .prompton-history__delete:hover {
-  background: var(--sl-color-bg-nav);
-  color: var(--sl-color-text);
+  background: var(--sl-color-red-low, var(--sl-color-bg));
+  color: var(--sl-color-red-high, var(--sl-color-white));
+}
+
+.prompton-history__delete:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: -2px;
 }
 
 [data-prompton-pane="chat"][hidden],
@@ -218,12 +394,11 @@ html[data-prompton-mode="chat"][data-has-hero] .sl-container {
   display: none !important;
 }
 
-/* Mode visibility — works on prerendered HTML via Head inline script */
-html[data-prompton-mode="chat"] [data-prompton-pane="browse"],
-.prompton-page[data-prompton-mode="chat"] [data-prompton-pane="browse"] {
-  display: none !important;
-}
-
+/*
+  Mode visibility — works on prerendered HTML via the Head inline script.
+  Chat mode deliberately does NOT hide the browse pane any more; the panes
+  coexist and the layout above turns the frame into two columns.
+*/
 html[data-prompton-mode="browse"] [data-prompton-pane="chat"],
 html:not([data-prompton-mode]) [data-prompton-pane="chat"],
 .prompton-page[data-prompton-mode="browse"] [data-prompton-pane="chat"] {
@@ -232,4 +407,140 @@ html:not([data-prompton-mode]) [data-prompton-pane="chat"],
 
 html[data-prompton-mode="chat"] [data-prompton-pane="chat"] {
   display: block !important;
+}
+
+
+/*
+  Sticky ask rail — rendered inside `.main-pane` so it inherits the article
+  measure instead of centering over the viewport. The scrim covers the rail's
+  full height, so prose dissolves behind it rather than being cut through the
+  middle of a line.
+*/
+.prompton-rail {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  /*
+    `.main-pane` is a flex column (below), and Starlight sets an auto inline
+    margin on it to pull content toward the table of contents. An auto margin
+    cancels flex stretch, so without an explicit width the rail collapses to
+    fit its own content instead of tracking the article column.
+  */
+  width: 100%;
+  max-width: calc(var(--sl-content-width) + var(--sl-content-pad-x) * 2);
+  margin-inline: var(--sl-content-margin-inline, auto);
+  padding: 2.75rem var(--sl-content-pad-x) calc(1rem + env(safe-area-inset-bottom, 0px));
+  /* The rail spans the column, but only the pill should swallow clicks. */
+  pointer-events: none;
+}
+
+.prompton-rail__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--sl-color-bg) 2.75rem);
+}
+
+.prompton-rail__form {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: 0.3rem 0.35rem 0.3rem 0.85rem;
+  /* Page-coloured fill, no shadow: it should read as part of the page. */
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.9rem;
+  pointer-events: auto;
+}
+
+.prompton-rail__form:focus-within {
+  border-color: var(--sl-color-accent);
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: -1px;
+}
+
+.prompton-rail__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sl-color-text);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  line-height: 1.5;
+  padding: 0.5rem 0;
+  resize: none;
+  max-height: 8.25rem;
+  overflow-y: auto;
+}
+
+.prompton-rail__input:focus {
+  outline: none;
+}
+
+.prompton-rail__input::placeholder {
+  color: var(--sl-color-gray-3);
+}
+
+.prompton-rail__send {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-bottom: 0.1rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sl-color-gray-6, var(--sl-color-bg-nav));
+  color: var(--sl-color-gray-2);
+  cursor: pointer;
+}
+
+.prompton-rail__send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.prompton-rail__send:not(:disabled):hover,
+.prompton-rail__form:focus-within .prompton-rail__send:not(:disabled) {
+  background: var(--sl-color-accent);
+  color: var(--sl-color-white);
+}
+
+.prompton-rail__send:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+/* The dock carries its own composer, so the rail stands down. */
+html[data-prompton-mode="chat"] .prompton-rail {
+  display: none;
+}
+
+@media print {
+  .prompton-rail {
+    display: none;
+  }
+}
+
+
+/*
+  `position: sticky` can pull the rail up but never push it down, so on a page
+  shorter than the viewport it would sit mid-screen with empty space beneath.
+  Filling the column keeps it on the bottom edge everywhere.
+*/
+[data-prompton-pane="browse"] .main-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(
+    100dvh - var(--sl-nav-height) - var(--sl-mobile-toc-height, 0rem)
+  );
+}
+
+[data-prompton-pane="browse"] .main-pane > main {
+  flex: 1 0 auto;
 }

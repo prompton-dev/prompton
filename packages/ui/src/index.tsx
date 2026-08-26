@@ -38,11 +38,15 @@ export interface PromptonChatProps {
   /** Navigate to a browse URL (path + optional hash). */
   onNavigate?: (href: string) => void;
   onNewChat?: () => void;
+  /** Dismiss the panel and return to reading. */
+  onClose?: () => void;
   suggestions?: string[];
   /** Contextual prompts shown under the latest assistant reply */
   followUps?: string[];
   pageContext?: PageContext;
-  connection?: "connecting" | "connected" | "disconnected";
+  /** Called when the reader engages the composer — used to open the socket lazily. */
+  onActivate?: () => void;
+  connection?: "idle" | "connecting" | "connected" | "disconnected";
 }
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -84,18 +88,25 @@ export function PromptonChat({
   onStop,
   onNavigate,
   onNewChat,
+  onClose,
   suggestions = [],
   followUps = [],
   pageContext,
+  onActivate,
   connection = "connected",
 }: PromptonChatProps) {
   const [input, setInput] = useState("");
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  // Follow new messages, unless the reader has deliberately scrolled up.
+  const stickToBottomRef = useRef(true);
+  const didInitialScrollRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const busy = status === "submitted" || status === "streaming";
-  const offline = connection !== "connected";
+  // "idle" and "connecting" still accept input — the send is queued until open.
+  const offline = connection === "disconnected";
   const canSend = !busy && !offline;
   const waitingForReply =
     busy &&
@@ -104,15 +115,48 @@ export function PromptonChat({
       (messages[messages.length - 1]?.role === "assistant" &&
         !messageHasVisibleText(messages[messages.length - 1]!)));
 
+  /*
+    Scroll the container itself rather than `scrollIntoView` on a sentinel: a
+    smooth scroll is cancelled when the panel goes from hidden to visible, which
+    left the reader parked on the oldest message right after asking a question.
+  */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const box = messagesRef.current;
+    if (!box || messages.length === 0) return;
+    // The first paint of a hydrated thread always lands on the newest message.
+    const first = !didInitialScrollRef.current;
+    if (!first && !stickToBottomRef.current) return;
+    didInitialScrollRef.current = true;
+
+    const jump = () => {
+      box.scrollTop = box.scrollHeight;
+    };
+    jump();
+    // Code blocks and web fonts settle a frame or two late and change the
+    // height, so re-assert rather than trusting the first measurement.
+    const frame = requestAnimationFrame(jump);
+    const timer = window.setTimeout(jump, 150);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [messages, status]);
+
+  const onMessagesScroll = useCallback(() => {
+    const box = messagesRef.current;
+    if (!box) return;
+    stickToBottomRef.current = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  }, []);
 
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+    const next = Math.min(el.scrollHeight, 128);
+    el.style.height = `${next}px`;
+    // A single line can round to a fraction over the box and show a scrollbar
+    // at rest; only allow scrolling once the field has actually hit its cap.
+    el.style.overflowY = el.scrollHeight > 128 ? "auto" : "hidden";
   }, [input]);
 
   useEffect(() => {
@@ -124,19 +168,35 @@ export function PromptonChat({
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
       if (typing) return;
-      if (e.key === "/") {
-        e.preventDefault();
-        textareaRef.current?.focus();
-      }
+      if (e.key !== "/") return;
+      if (document.documentElement.getAttribute("data-prompton-mode") !== "chat") return;
+      e.preventDefault();
+      textareaRef.current?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /*
+    Focus the composer whenever the panel becomes visible — on load for a
+    ?mode=chat deep link, and on every soft switch after that. Watching the
+    attribute keeps this working without the panel being remounted.
+  */
   useEffect(() => {
-    if (document.documentElement.getAttribute("data-prompton-mode") !== "chat") return;
-    const t = window.setTimeout(() => textareaRef.current?.focus(), 80);
-    return () => window.clearTimeout(t);
+    const root = document.documentElement;
+    let timer = 0;
+    const focusIfChat = () => {
+      if (root.getAttribute("data-prompton-mode") !== "chat") return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => textareaRef.current?.focus(), 80);
+    };
+    focusIfChat();
+    const observer = new MutationObserver(focusIfChat);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-prompton-mode"] });
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const submit = useCallback(
@@ -159,6 +219,9 @@ export function PromptonChat({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void submit(input);
+    } else if (e.key === "Escape" && onClose) {
+      e.preventDefault();
+      onClose();
     }
   };
 
@@ -188,14 +251,35 @@ export function PromptonChat({
             : "Ready · / focus · C chat · B browse";
 
   return (
-    <div className="prompton-chat" data-prompton-chat>
+    <section className="prompton-chat" data-prompton-chat aria-label="Chat with the docs">
       <div className="prompton-chat__toolbar">
         <span className="prompton-chat__toolbar-label">Chat</span>
-        {onNewChat ? (
-          <button type="button" className="prompton-chat__new" onClick={onNewChat}>
-            New chat
-          </button>
-        ) : null}
+        <div className="prompton-chat__toolbar-actions">
+          {onNewChat ? (
+            <button type="button" className="prompton-chat__new" onClick={onNewChat}>
+              New chat
+            </button>
+          ) : null}
+          {onClose ? (
+            <button
+              type="button"
+              className="prompton-chat__close"
+              onClick={onClose}
+              aria-label="Close chat"
+              title="Close chat (Esc)"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden focusable="false">
+                <path
+                  d="m4 4 8 8M12 4l-8 8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </div>
       {empty ? (
         <div className="prompton-chat__empty">
@@ -226,7 +310,13 @@ export function PromptonChat({
           )}
         </div>
       ) : (
-        <div className="prompton-chat__messages" role="log" aria-live="polite">
+        <div
+          className="prompton-chat__messages"
+          role="log"
+          aria-live="polite"
+          ref={messagesRef}
+          onScroll={onMessagesScroll}
+        >
           {messages.map((m, idx) => {
             const citations = dedupeCitations(m.citations);
             const textParts = m.parts.filter((p) => p.type === "text" && p.text);
@@ -355,9 +445,10 @@ export function PromptonChat({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
+            onFocus={() => onActivate?.()}
             placeholder={
               offline
-                ? "Connecting to chat…"
+                ? "Reconnecting…"
                 : pageContext
                   ? `Ask about ${pageContext.title}…`
                   : "Ask about the docs…"
@@ -395,14 +486,16 @@ export function PromptonChat({
                 ? "prompton-chat__dot--ok"
                 : connection === "connecting"
                   ? "prompton-chat__dot--pending"
-                  : "prompton-chat__dot--bad",
+                  : connection === "idle"
+                    ? "prompton-chat__dot--idle"
+                    : "prompton-chat__dot--bad",
             ].join(" ")}
             aria-hidden
           />
           {statusLabel}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

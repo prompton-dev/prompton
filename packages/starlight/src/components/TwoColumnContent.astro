@@ -1,0 +1,15 @@
+---
+/**
+ * Only reason for this override: it puts the ask-composer inside `.main-pane`,
+ * which is the article column Starlight already sizes around the table of
+ * contents. Anchoring the rail there means no duplicated layout math.
+ */
+import Default from "@astrojs/starlight/components/TwoColumnContent.astro";
+import ChatRail from "./ChatRail.astro";
+---
+
+<Default>
+  <slot name="right-sidebar" slot="right-sidebar" />
+  <slot />
+  <ChatRail />
+</Default>
