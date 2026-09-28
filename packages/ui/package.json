@@ -40,7 +40,7 @@
   "peerDependencies": {
     "@ai-sdk/react": "^2.0.0 || ^3.0.0 || ^4.0.0",
     "@cloudflare/ai-chat": "^0.10.0",
-    "agents": "^0.21.0",
+    "agents": "^0.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -50,10 +50,10 @@
   },
   "devDependencies": {
     "@ai-sdk/react": "^4.0.81",
-    "@cloudflare/ai-chat": "^0.10.2",
+    "@cloudflare/ai-chat": "^0.12.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
-    "agents": "^0.21.0",
+    "agents": "^0.24.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "^7.0.2"
